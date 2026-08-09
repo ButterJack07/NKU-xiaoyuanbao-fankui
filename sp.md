@@ -52,7 +52,7 @@ supabase.sql
 - 开启 Row Level Security（RLS）。
 - 创建 Bug 查询、提交和更新策略。
 - 创建公开附件桶 `bug-attachments`。
-- 限制附件最大为 5 MB。
+- 限制附件最大为 20 MB。
 - 创建附件上传和读取策略。
 
 脚本使用了 `if not exists` 和 `drop policy if exists`，因此在调整策略后可以重新执行。
@@ -131,7 +131,7 @@ bug-attachments
 
 - Bucket 为公开读取。
 - 匿名用户可以上传附件。
-- 单个文件最大 5 MB。
+- 单个文件最大 20 MB。
 - 支持 PNG、JPEG、GIF、WebP、TXT、LOG 和 PDF 等文件。
 - 网站 A 最多允许每条 Bug 选择 3 个附件。
 
@@ -260,7 +260,7 @@ python -m http.server 8090
 
 1. 打开 `submit.html`。
 2. 填写所有必填项。
-3. 可选择一个小于 5 MB 的图片或文本附件。
+3. 可选择一个小于 20 MB 的图片或文本附件。
 4. 点击“提交 Bug 反馈”。
 5. 页面应显示提交成功和 Bug 编号。
 6. 返回 Supabase **Table Editor**。
@@ -411,7 +411,7 @@ your-anon-or-publishable-key
 检查：
 
 - Storage 中是否存在 `bug-attachments`。
-- 文件是否超过 5 MB。
+- 文件是否超过 20 MB。
 - 文件类型是否被允许。
 - `storage.objects` 是否存在上传策略。
 - Bucket 是否配置为 Public。

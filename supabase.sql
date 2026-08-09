@@ -113,7 +113,7 @@ values (
   'bug-attachments',
   'bug-attachments',
   true,
-  5242880,
+  20971520,
   array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'text/plain', 'application/pdf', 'application/octet-stream']
 )
 on conflict (id) do update set
