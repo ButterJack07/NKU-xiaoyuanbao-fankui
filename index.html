@@ -140,6 +140,7 @@
       <div>
         <p class="eyebrow">IMAGE PREVIEW</p>
         <strong id="imagePreviewTitle">附件图片</strong>
+        <small id="imagePreviewCounter">1 / 1</small>
       </div>
       <div class="image-preview-actions">
         <a id="openOriginalImage" class="button button-ghost button-small" href="#" target="_blank" rel="noopener">打开原图 ↗</a>
@@ -147,8 +148,13 @@
       </div>
     </div>
     <div id="imagePreviewStage" class="image-preview-stage">
+      <button id="previousPreviewImage" class="image-preview-nav image-preview-previous" type="button" aria-label="上一张图片">←</button>
+      <div id="imagePreviewLoading" class="image-preview-loading"><span class="loader"></span><small>正在加载图片…</small></div>
       <img id="imagePreviewContent" src="" alt="Bug 附件大图预览">
+      <div id="imagePreviewError" class="image-preview-error hidden"><strong>图片加载失败</strong><small>可以尝试点击右上角“打开原图”。</small></div>
+      <button id="nextPreviewImage" class="image-preview-nav image-preview-next" type="button" aria-label="下一张图片">→</button>
     </div>
+    <div id="imagePreviewStrip" class="image-preview-strip"></div>
   </div>
 
   <div id="loginModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">

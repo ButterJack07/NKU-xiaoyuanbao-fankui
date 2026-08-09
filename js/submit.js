@@ -56,9 +56,9 @@
       showToast(invalid.name + ' 不是支持的图片格式。', 'error');
       return;
     }
-    var oversized = incoming.find(function (file) { return file.size > 20 * 1024 * 1024; });
+    var oversized = incoming.find(function (file) { return file.size > 5 * 1024 * 1024; });
     if (oversized) {
-      showToast(oversized.name + ' 超过 20 MB 限制。', 'error');
+      showToast(oversized.name + ' 超过 5 MB 限制。', 'error');
       return;
     }
     selectedFiles = selectedFiles.concat(incoming);

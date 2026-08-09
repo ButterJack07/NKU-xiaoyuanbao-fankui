@@ -6,6 +6,8 @@
   var currentDeveloper = null;
   var currentStatus = 'all';
   var currentBugId = null;
+  var previewImages = [];
+  var previewIndex = 0;
   var bugList = document.getElementById('bugList');
   var loadingState = document.getElementById('loadingState');
   var emptyState = document.getElementById('emptyState');
@@ -260,29 +262,73 @@
       var safeUrl = escapeHtml(url);
       var name = attachmentName(url, index);
       if (isImageAttachment(url)) {
-        imageItems.push('<button class="attachment-thumbnail" type="button" data-preview-url="' + safeUrl + '" data-preview-name="' + escapeHtml(name) + '" aria-label="预览图片 ' + escapeHtml(name) + '"><img src="' + safeUrl + '" alt="' + escapeHtml(name) + ' 缩略图" loading="lazy"><span><strong>' + escapeHtml(name) + '</strong><small>点击查看大图</small></span></button>');
+        imageItems.push('<button class="attachment-thumbnail" type="button" data-preview-index="' + imageItems.length + '" aria-label="预览图片 ' + escapeHtml(name) + '"><span class="thumbnail-image-wrap"><img src="' + safeUrl + '" alt="' + escapeHtml(name) + ' 缩略图" loading="lazy"><i>图片无法加载</i></span><span><strong>' + escapeHtml(name) + '</strong><small>点击查看大图</small></span></button>');
       } else {
         fileItems.push('<a class="attachment-link" href="' + safeUrl + '" target="_blank" rel="noopener">' + escapeHtml(name) + ' ↗</a>');
       }
     });
-    return '<section class="detail-block"><h3>附件</h3>' + (imageItems.length ? '<div class="attachment-gallery">' + imageItems.join('') + '</div>' : '') + (fileItems.length ? '<div class="attachment-list">' + fileItems.join('') + '</div>' : '') + '</section>';
+    previewImages = urls.filter(isImageAttachment).map(function (url, index) { return { url: url, name: attachmentName(url, index) }; });
+    return '<section class="detail-block"><h3>问题图片</h3>' + (imageItems.length ? '<div class="attachment-gallery">' + imageItems.join('') + '</div>' : '') + (fileItems.length ? '<div class="attachment-list">' + fileItems.join('') + '</div>' : '') + '</section>';
   }
 
   function bindAttachmentPreviews() {
     document.querySelectorAll('.attachment-thumbnail').forEach(function (button) {
       button.addEventListener('click', function () {
-        openImagePreview(button.dataset.previewUrl, button.dataset.previewName);
+        openImagePreview(Number(button.dataset.previewIndex));
+      });
+      var image = button.querySelector('img');
+      image.addEventListener('error', function () { button.classList.add('image-load-failed'); });
+    });
+  }
+
+  function renderPreviewImage() {
+    var image = previewImages[previewIndex];
+    if (!image) return;
+    var content = document.getElementById('imagePreviewContent');
+    var loading = document.getElementById('imagePreviewLoading');
+    var error = document.getElementById('imagePreviewError');
+    content.classList.add('is-loading');
+    loading.classList.remove('hidden');
+    error.classList.add('hidden');
+    content.src = image.url;
+    document.getElementById('imagePreviewTitle').textContent = image.name;
+    document.getElementById('imagePreviewCounter').textContent = (previewIndex + 1) + ' / ' + previewImages.length;
+    document.getElementById('openOriginalImage').href = image.url;
+    document.getElementById('previousPreviewImage').disabled = previewImages.length < 2;
+    document.getElementById('nextPreviewImage').disabled = previewImages.length < 2;
+    document.querySelectorAll('.image-preview-strip button').forEach(function (button, index) {
+      button.classList.toggle('active', index === previewIndex);
+    });
+  }
+
+  function renderPreviewStrip() {
+    var strip = document.getElementById('imagePreviewStrip');
+    strip.classList.toggle('hidden', previewImages.length < 2);
+    strip.innerHTML = previewImages.map(function (image, index) {
+      return '<button type="button" data-preview-strip-index="' + index + '" aria-label="查看第 ' + (index + 1) + ' 张图片"><img src="' + escapeHtml(image.url) + '" alt=""></button>';
+    }).join('');
+    strip.querySelectorAll('button').forEach(function (button) {
+      button.addEventListener('click', function () {
+        previewIndex = Number(button.dataset.previewStripIndex);
+        renderPreviewImage();
       });
     });
   }
 
-  function openImagePreview(url, name) {
+  function openImagePreview(index) {
     var modal = document.getElementById('imagePreviewModal');
-    document.getElementById('imagePreviewContent').src = url;
-    document.getElementById('imagePreviewTitle').textContent = name || '附件图片';
-    document.getElementById('openOriginalImage').href = url;
+    if (!previewImages.length) return;
+    previewIndex = Math.max(0, Math.min(index || 0, previewImages.length - 1));
+    renderPreviewStrip();
+    renderPreviewImage();
     modal.classList.remove('hidden');
     document.body.classList.add('drawer-open');
+  }
+
+  function movePreview(step) {
+    if (previewImages.length < 2) return;
+    previewIndex = (previewIndex + step + previewImages.length) % previewImages.length;
+    renderPreviewImage();
   }
 
   function closeImagePreview() {
@@ -517,6 +563,17 @@
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);
+  document.getElementById('previousPreviewImage').addEventListener('click', function () { movePreview(-1); });
+  document.getElementById('nextPreviewImage').addEventListener('click', function () { movePreview(1); });
+  document.getElementById('imagePreviewContent').addEventListener('load', function (event) {
+    event.currentTarget.classList.remove('is-loading');
+    document.getElementById('imagePreviewLoading').classList.add('hidden');
+  });
+  document.getElementById('imagePreviewContent').addEventListener('error', function (event) {
+    event.currentTarget.classList.add('is-loading');
+    document.getElementById('imagePreviewLoading').classList.add('hidden');
+    document.getElementById('imagePreviewError').classList.remove('hidden');
+  });
   document.getElementById('imagePreviewModal').addEventListener('click', function (event) {
     if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
   });
@@ -535,6 +592,8 @@
   document.getElementById('developerForm').addEventListener('submit', saveDeveloper);
   backdrop.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function (event) {
+    if (!document.getElementById('imagePreviewModal').classList.contains('hidden') && event.key === 'ArrowLeft') movePreview(-1);
+    if (!document.getElementById('imagePreviewModal').classList.contains('hidden') && event.key === 'ArrowRight') movePreview(1);
     if (event.key === 'Escape') {
       if (!document.getElementById('imagePreviewModal').classList.contains('hidden')) {
         closeImagePreview();
