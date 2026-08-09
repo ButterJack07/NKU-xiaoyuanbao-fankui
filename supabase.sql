@@ -8,8 +8,7 @@ create table if not exists public.bugs (
   reporter text not null check (char_length(reporter) between 1 and 40),
   module text not null check (char_length(module) between 1 and 60),
   environment text not null default '' check (char_length(environment) <= 200),
-  severity text not null default 'major' check (severity in ('blocker', 'critical', 'major', 'minor')),
-  priority text not null default 'medium' check (priority in ('urgent', 'high', 'medium', 'low')),
+  importance text not null default 'medium' check (importance in ('light', 'medium', 'heavy')),
   repro_steps text not null check (char_length(repro_steps) between 1 and 3000),
   expected_result text not null default '' check (char_length(expected_result) <= 1500),
   actual_result text not null default '' check (char_length(actual_result) <= 1500),
@@ -37,6 +36,37 @@ create table if not exists public.developers (
 alter table public.bugs drop column if exists team;
 alter table public.developers drop column if exists role;
 alter table public.developers drop column if exists contact;
+
+-- 将旧版严重程度与优先级合并为轻、中、重三个重要程度等级。
+alter table public.bugs add column if not exists importance text;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'bugs' and column_name = 'severity'
+  ) and exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'bugs' and column_name = 'priority'
+  ) then
+    execute $migration$
+      update public.bugs
+      set importance = case
+        when severity in ('blocker', 'critical') or priority in ('urgent', 'high') then 'heavy'
+        when severity = 'minor' and priority = 'low' then 'light'
+        else 'medium'
+      end
+      where importance is null
+    $migration$;
+  else
+    update public.bugs set importance = 'medium' where importance is null;
+  end if;
+end $$;
+alter table public.bugs alter column importance set default 'medium';
+alter table public.bugs alter column importance set not null;
+alter table public.bugs drop constraint if exists bugs_importance_check;
+alter table public.bugs add constraint bugs_importance_check check (importance in ('light', 'medium', 'heavy'));
+alter table public.bugs drop column if exists severity;
+alter table public.bugs drop column if exists priority;
 
 alter table public.bugs add column if not exists assignee_department text not null default '';
 alter table public.bugs add column if not exists assignee_id uuid references public.developers(id) on delete set null;

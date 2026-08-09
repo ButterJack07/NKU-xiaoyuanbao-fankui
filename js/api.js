@@ -83,7 +83,7 @@
   }
 
   async function listBugs() {
-    var fields = 'id,title,description,reporter,module,environment,severity,priority,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at';
+    var fields = 'id,title,description,reporter,module,environment,importance,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at';
     return request('/rest/v1/' + config.tableName + '?select=' + fields + '&order=created_at.desc', {
       method: 'GET',
       headers: headers()

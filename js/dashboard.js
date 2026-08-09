@@ -17,8 +17,7 @@
   var identityStorageKey = 'xiaoyuanbao-current-developer';
 
   var labels = {
-    severity: { blocker: '阻断', critical: '严重', major: '主要', minor: '次要' },
-    priority: { urgent: 'P0', high: 'P1', medium: 'P2', low: 'P3' },
+    importance: { light: '轻', medium: '中', heavy: '重' },
     status: { open: '待处理', in_progress: '修复中', resolved: '已解决' }
   };
 
@@ -139,7 +138,7 @@
     emptyState.classList.toggle('hidden', rows.length !== 0);
     list.classList.toggle('hidden', rows.length === 0);
     list.innerHTML = rows.map(function (bug) {
-      return '<button class="my-task-card" type="button" data-bug-id="' + escapeHtml(bug.id) + '"><span class="my-task-priority severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.priority[bug.priority] || bug.priority) + '</span><span><small>' + escapeHtml(bug.module) + ' · ' + formatDate(bug.created_at) + '</small><strong>' + escapeHtml(bug.title) + '</strong></span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span><b>→</b></button>';
+      return '<button class="my-task-card importance-' + escapeHtml(bug.importance) + '" type="button" data-bug-id="' + escapeHtml(bug.id) + '"><span class="my-task-priority">' + escapeHtml(labels.importance[bug.importance] || bug.importance) + '</span><span><small>' + escapeHtml(bug.module) + ' · ' + formatDate(bug.created_at) + '</small><strong>' + escapeHtml(bug.title) + '</strong></span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span><b>→</b></button>';
     }).join('');
     list.querySelectorAll('.my-task-card').forEach(function (button) {
       button.addEventListener('click', function () { openDrawer(button.dataset.bugId); });
@@ -191,12 +190,12 @@
 
   function filteredBugs() {
     var query = document.getElementById('searchInput').value.trim().toLowerCase();
-    var severity = document.getElementById('severityFilter').value;
+    var importance = document.getElementById('importanceFilter').value;
     return bugs.filter(function (bug) {
       var matchesStatus = currentStatus === 'all' || bug.status === currentStatus;
-      var matchesSeverity = severity === 'all' || bug.severity === severity;
+      var matchesImportance = importance === 'all' || bug.importance === importance;
       var haystack = [bug.title, bug.module, bug.reporter, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
-      return matchesStatus && matchesSeverity && (!query || haystack.includes(query));
+      return matchesStatus && matchesImportance && (!query || haystack.includes(query));
     });
   }
 
@@ -209,7 +208,7 @@
 
     rows.forEach(function (bug) {
       var article = document.createElement('article');
-      article.className = 'bug-row' + (bug.status === 'resolved' ? ' is-resolved' : '');
+      article.className = 'bug-row importance-' + escapeHtml(bug.importance) + (bug.status === 'resolved' ? ' is-resolved' : '');
       article.tabIndex = 0;
       article.setAttribute('role', 'button');
       article.innerHTML =
@@ -218,7 +217,7 @@
           '<div class="bug-meta"><span>#' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</span><span>' + escapeHtml(bug.module) + '</span><span>' + formatDate(bug.created_at) + '</span></div>' +
           '<h3>' + escapeHtml(bug.title) + '</h3>' +
           '<p>' + escapeHtml(bug.description) + '</p>' +
-          '<div class="bug-tags"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity] || bug.severity) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority] || bug.priority) + '</span></div>' +
+          '<div class="bug-tags"><span class="tag importance-tag importance-' + escapeHtml(bug.importance) + '">重要程度 · ' + escapeHtml(labels.importance[bug.importance] || bug.importance) + '</span></div>' +
         '</div>' +
         '<div class="bug-owner"><span>' + (bug.assignee ? escapeHtml(bug.assignee.slice(0, 1).toUpperCase()) : (bug.assignee_department ? '部' : '?')) + '</span><div><small>' + escapeHtml(bug.assignee_department || '负责人') + '</small><strong>' + escapeHtml(bug.assignee || (bug.assignee_department ? '分配给部门' : '待分配')) + '</strong></div></div>' +
         '<div class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status] || bug.status) + '</div>' +
@@ -353,7 +352,7 @@
     var developerOptions = buildDeveloperOptions(bug.assignee_department, bug.assignee_id, bug.assignee);
 
     document.getElementById('drawerContent').innerHTML =
-      '<div class="detail-badges"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity]) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority]) + '</span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span></div>' +
+      '<div class="detail-badges"><span class="tag importance-tag importance-' + escapeHtml(bug.importance) + '">重要程度 · ' + escapeHtml(labels.importance[bug.importance]) + '</span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span></div>' +
       '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
       detailBlock('问题描述', bug.description) + detailBlock('复现步骤', bug.repro_steps, 'numbered-text') +
       detailBlock('预期结果', bug.expected_result) + detailBlock('实际结果', bug.actual_result) +
@@ -557,7 +556,7 @@
     });
   });
   document.getElementById('searchInput').addEventListener('input', renderList);
-  document.getElementById('severityFilter').addEventListener('change', renderList);
+  document.getElementById('importanceFilter').addEventListener('change', renderList);
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);

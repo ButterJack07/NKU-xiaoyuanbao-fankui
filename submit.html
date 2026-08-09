@@ -59,27 +59,17 @@
               <span>反馈人 <i>*</i></span>
               <input name="reporter" type="text" maxlength="40" required placeholder="你的姓名或花名">
             </label>
-            <div class="field-row field-row-three">
+            <div class="field-row">
               <label class="field">
                 <span>功能模块 <i>*</i></span>
                 <input name="module" type="text" maxlength="60" required placeholder="例如：登录模块">
               </label>
               <label class="field">
-                <span>严重程度 <i>*</i></span>
-                <select name="severity" required>
-                  <option value="major">主要</option>
-                  <option value="blocker">阻断</option>
-                  <option value="critical">严重</option>
-                  <option value="minor">次要</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>优先级 <i>*</i></span>
-                <select name="priority" required>
-                  <option value="medium">P2 · 中</option>
-                  <option value="urgent">P0 · 紧急</option>
-                  <option value="high">P1 · 高</option>
-                  <option value="low">P3 · 低</option>
+                <span>重要程度 <i>*</i></span>
+                <select name="importance" required>
+                  <option value="medium">中</option>
+                  <option value="light">轻</option>
+                  <option value="heavy">重</option>
                 </select>
               </label>
             </div>

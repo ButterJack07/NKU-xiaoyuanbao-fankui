@@ -73,8 +73,7 @@ supabase.sql
 | `reporter` | `text` | 反馈人 |
 | `module` | `text` | 出现问题的功能模块 |
 | `environment` | `text` | 系统、浏览器、版本或服务器环境 |
-| `severity` | `text` | 严重程度 |
-| `priority` | `text` | 修复优先级 |
+| `importance` | `text` | 重要程度 |
 | `repro_steps` | `text` | 复现步骤 |
 | `expected_result` | `text` | 预期结果 |
 | `actual_result` | `text` | 实际结果 |
@@ -90,8 +89,7 @@ supabase.sql
 字段枚举值：
 
 ```text
-severity: blocker / critical / major / minor
-priority: urgent / high / medium / low
+importance: light / medium / heavy
 status: open / in_progress / resolved
 ```
 
@@ -267,7 +265,7 @@ python -m http.server 8090
 
 1. 打开 `index.html`。
 2. 页面应展示刚才提交的 Bug。
-3. 检查标题、模块、严重程度和状态是否正确。
+3. 检查标题、模块、重要程度和状态是否正确。
 4. 点击 Bug 行打开详情抽屉。
 
 ### 8.3 验证修复计划更新
