@@ -22,6 +22,10 @@
       <a href="submit.html">提交 Bug</a>
     </nav>
     <div class="top-actions">
+      <button id="openLoginModal" class="identity-button" type="button">
+        <span id="identityAvatar">?</span>
+        <span><small id="identityLabel">开发人员</small><strong id="identityName">选择登录</strong></span>
+      </button>
       <button id="openDeveloperModal" class="button button-ghost button-small" type="button">登记开发人员</button>
       <a class="button button-primary button-small" href="submit.html">+ 新建反馈</a>
     </div>
@@ -38,7 +42,24 @@
 
     <div id="configNotice" class="notice hidden" role="status"></div>
 
-    <section class="stats-grid reveal delay-1" aria-label="Bug 统计">
+    <section id="myTasksPanel" class="my-tasks-panel reveal delay-1">
+      <div class="my-tasks-heading">
+        <div>
+          <p class="eyebrow">MY ASSIGNMENTS</p>
+          <h2>分配给我的任务</h2>
+        </div>
+        <div id="myTasksIdentity" class="my-tasks-identity">登录后查看个人任务</div>
+      </div>
+      <div id="myTasksLogin" class="my-tasks-login">
+        <span>◎</span>
+        <div><strong>还没有选择开发人员身份</strong><small>从已登记人员中选择登录，身份会保存在当前浏览器。</small></div>
+        <button id="loginFromTasks" class="button button-primary button-small" type="button">选择登录 →</button>
+      </div>
+      <div id="myTasksEmpty" class="my-tasks-empty hidden">当前没有直接分配给你的未解决任务。</div>
+      <div id="myTasksList" class="my-tasks-list hidden"></div>
+    </section>
+
+    <section class="stats-grid reveal delay-2" aria-label="Bug 统计">
       <article class="stat-card stat-total">
         <span>全部问题</span>
         <strong id="statTotal">—</strong>
@@ -114,6 +135,28 @@
     </div>
     <div id="drawerContent" class="drawer-content"></div>
   </aside>
+
+  <div id="loginModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+    <section class="login-modal">
+      <div class="developer-modal-header">
+        <div>
+          <p class="eyebrow">LOCAL DEVELOPER LOGIN</p>
+          <h2 id="loginModalTitle">选择开发人员登录</h2>
+          <p>无需密码。选择已登记身份后，本浏览器会记住你的个人任务视图。</p>
+        </div>
+        <button id="closeLoginModal" class="icon-button" type="button" aria-label="关闭登录窗口">×</button>
+      </div>
+      <div id="loginDeveloperList" class="login-developer-list"></div>
+      <div id="loginEmpty" class="login-empty hidden">
+        <p>目前没有已登记的开发人员，请先完成登记。</p>
+        <button id="registerFromLogin" class="button button-primary" type="button">登记开发人员 →</button>
+      </div>
+      <div id="logoutArea" class="logout-area hidden">
+        <span>当前浏览器已保存登录身份。</span>
+        <button id="logoutButton" class="button button-ghost button-small" type="button">退出当前身份</button>
+      </div>
+    </section>
+  </div>
 
   <div id="developerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="developerModalTitle">
     <section class="developer-modal">
