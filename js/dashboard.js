@@ -3,6 +3,7 @@
 
   var bugs = [];
   var developers = [];
+  var currentDeveloper = null;
   var currentStatus = 'all';
   var currentBugId = null;
   var bugList = document.getElementById('bugList');
@@ -11,6 +12,7 @@
   var drawer = document.getElementById('detailDrawer');
   var backdrop = document.getElementById('detailBackdrop');
   var configNotice = document.getElementById('configNotice');
+  var identityStorageKey = 'xiaoyuanbao-current-developer';
 
   var labels = {
     severity: { blocker: '阻断', critical: '严重', major: '主要', minor: '次要' },
@@ -46,12 +48,123 @@
     document.getElementById('statOpen').textContent = bugs.filter(function (bug) { return bug.status === 'open'; }).length;
     document.getElementById('statProgress').textContent = bugs.filter(function (bug) { return bug.status === 'in_progress'; }).length;
     document.getElementById('statResolved').textContent = bugs.filter(function (bug) { return bug.status === 'resolved'; }).length;
+    renderMyTasks();
   }
 
   function uniqueDepartments() {
     return developers.map(function (developer) { return developer.department; }).filter(function (department, index, rows) {
       return department && rows.indexOf(department) === index;
     });
+  }
+
+  function readStoredIdentity() {
+    try {
+      return JSON.parse(localStorage.getItem(identityStorageKey) || 'null');
+    } catch (error) {
+      localStorage.removeItem(identityStorageKey);
+      return null;
+    }
+  }
+
+  function restoreIdentity() {
+    var stored = readStoredIdentity();
+    currentDeveloper = stored ? developers.find(function (developer) { return developer.id === stored.id; }) || null : null;
+    if (stored && !currentDeveloper) localStorage.removeItem(identityStorageKey);
+    renderIdentity();
+    renderMyTasks();
+  }
+
+  function loginDeveloper(developer) {
+    currentDeveloper = developer;
+    localStorage.setItem(identityStorageKey, JSON.stringify({ id: developer.id, name: developer.name, department: developer.department }));
+    renderIdentity();
+    renderMyTasks();
+    closeLoginModal();
+    showToast('已以 ' + developer.name + ' 的身份登录。', 'success');
+  }
+
+  function logoutDeveloper() {
+    currentDeveloper = null;
+    localStorage.removeItem(identityStorageKey);
+    renderIdentity();
+    renderMyTasks();
+    closeLoginModal();
+    showToast('已退出当前开发人员身份。');
+  }
+
+  function renderIdentity() {
+    var avatar = document.getElementById('identityAvatar');
+    var label = document.getElementById('identityLabel');
+    var name = document.getElementById('identityName');
+    if (currentDeveloper) {
+      avatar.textContent = currentDeveloper.name.slice(0, 1);
+      label.textContent = currentDeveloper.department;
+      name.textContent = currentDeveloper.name;
+    } else {
+      avatar.textContent = '?';
+      label.textContent = '开发人员';
+      name.textContent = '选择登录';
+    }
+    renderLoginDirectory();
+  }
+
+  function myTaskRows() {
+    if (!currentDeveloper) return [];
+    return bugs.filter(function (bug) {
+      return bug.status !== 'resolved' && bug.assignee_id === currentDeveloper.id;
+    });
+  }
+
+  function renderMyTasks() {
+    var loginState = document.getElementById('myTasksLogin');
+    var emptyState = document.getElementById('myTasksEmpty');
+    var list = document.getElementById('myTasksList');
+    var identity = document.getElementById('myTasksIdentity');
+    if (!currentDeveloper) {
+      identity.textContent = '登录后查看个人任务';
+      loginState.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      list.classList.add('hidden');
+      list.innerHTML = '';
+      return;
+    }
+
+    var rows = myTaskRows();
+    identity.textContent = currentDeveloper.name + ' · ' + currentDeveloper.department + ' · ' + rows.length + ' 项';
+    loginState.classList.add('hidden');
+    emptyState.classList.toggle('hidden', rows.length !== 0);
+    list.classList.toggle('hidden', rows.length === 0);
+    list.innerHTML = rows.map(function (bug) {
+      return '<button class="my-task-card" type="button" data-bug-id="' + escapeHtml(bug.id) + '"><span class="my-task-priority severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.priority[bug.priority] || bug.priority) + '</span><span><small>' + escapeHtml(bug.module) + ' · ' + formatDate(bug.created_at) + '</small><strong>' + escapeHtml(bug.title) + '</strong></span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span><b>→</b></button>';
+    }).join('');
+    list.querySelectorAll('.my-task-card').forEach(function (button) {
+      button.addEventListener('click', function () { openDrawer(button.dataset.bugId); });
+    });
+  }
+
+  function renderLoginDirectory() {
+    var list = document.getElementById('loginDeveloperList');
+    var empty = document.getElementById('loginEmpty');
+    var logoutArea = document.getElementById('logoutArea');
+    if (!developers.length) {
+      list.innerHTML = '';
+      list.classList.add('hidden');
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+      list.classList.remove('hidden');
+      list.innerHTML = developers.map(function (developer) {
+        var isCurrent = currentDeveloper && currentDeveloper.id === developer.id;
+        return '<button class="login-developer-card ' + (isCurrent ? 'is-current' : '') + '" type="button" data-developer-id="' + escapeHtml(developer.id) + '"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><span><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + (developer.role ? ' · ' + escapeHtml(developer.role) : '') + '</small></span><b>' + (isCurrent ? '当前身份 ✓' : '登录 →') + '</b></button>';
+      }).join('');
+      list.querySelectorAll('.login-developer-card').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var developer = developers.find(function (item) { return item.id === button.dataset.developerId; });
+          if (developer) loginDeveloper(developer);
+        });
+      });
+    }
+    logoutArea.classList.toggle('hidden', !currentDeveloper);
   }
 
   function renderDeveloperDirectory() {
@@ -208,7 +321,9 @@
     drawer.classList.remove('open');
     drawer.setAttribute('aria-hidden', 'true');
     backdrop.classList.add('hidden');
-    document.body.classList.remove('drawer-open');
+    if (document.getElementById('developerModal').classList.contains('hidden') && document.getElementById('loginModal').classList.contains('hidden')) {
+      document.body.classList.remove('drawer-open');
+    }
     currentBugId = null;
   }
 
@@ -271,6 +386,20 @@
   async function loadDevelopers() {
     developers = await window.PatchworkAPI.listDevelopers();
     renderDeveloperDirectory();
+    restoreIdentity();
+  }
+
+  function openLoginModal() {
+    renderLoginDirectory();
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.body.classList.add('drawer-open');
+  }
+
+  function closeLoginModal() {
+    document.getElementById('loginModal').classList.add('hidden');
+    if (document.getElementById('developerModal').classList.contains('hidden') && !drawer.classList.contains('open')) {
+      document.body.classList.remove('drawer-open');
+    }
   }
 
   function openDeveloperModal() {
@@ -280,7 +409,9 @@
 
   function closeDeveloperModal() {
     document.getElementById('developerModal').classList.add('hidden');
-    document.body.classList.remove('drawer-open');
+    if (document.getElementById('loginModal').classList.contains('hidden') && !drawer.classList.contains('open')) {
+      document.body.classList.remove('drawer-open');
+    }
   }
 
   async function saveDeveloper(event) {
@@ -299,6 +430,7 @@
       developers.push(rows[0]);
       developers.sort(function (a, b) { return (a.department + a.name).localeCompare(b.department + b.name, 'zh-CN'); });
       renderDeveloperDirectory();
+      renderLoginDirectory();
       event.currentTarget.reset();
       showToast('开发人员已登记，可在任务中快速分配。', 'success');
     } catch (error) {
@@ -323,6 +455,15 @@
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('openDeveloperModal').addEventListener('click', openDeveloperModal);
+  document.getElementById('openLoginModal').addEventListener('click', openLoginModal);
+  document.getElementById('loginFromTasks').addEventListener('click', openLoginModal);
+  document.getElementById('closeLoginModal').addEventListener('click', closeLoginModal);
+  document.getElementById('loginModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeLoginModal(); });
+  document.getElementById('logoutButton').addEventListener('click', logoutDeveloper);
+  document.getElementById('registerFromLogin').addEventListener('click', function () {
+    closeLoginModal();
+    openDeveloperModal();
+  });
   document.getElementById('closeDeveloperModal').addEventListener('click', closeDeveloperModal);
   document.getElementById('developerModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeDeveloperModal(); });
   document.getElementById('developerForm').addEventListener('submit', saveDeveloper);
@@ -331,6 +472,7 @@
     if (event.key === 'Escape') {
       closeDrawer();
       closeDeveloperModal();
+      closeLoginModal();
     }
   });
 
