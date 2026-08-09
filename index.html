@@ -135,6 +135,22 @@
     <div id="drawerContent" class="drawer-content"></div>
   </aside>
 
+  <div id="imagePreviewModal" class="image-preview-modal hidden" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle">
+    <div class="image-preview-toolbar">
+      <div>
+        <p class="eyebrow">IMAGE PREVIEW</p>
+        <strong id="imagePreviewTitle">附件图片</strong>
+      </div>
+      <div class="image-preview-actions">
+        <a id="openOriginalImage" class="button button-ghost button-small" href="#" target="_blank" rel="noopener">打开原图 ↗</a>
+        <button id="closeImagePreview" class="icon-button" type="button" aria-label="关闭图片预览">×</button>
+      </div>
+    </div>
+    <div id="imagePreviewStage" class="image-preview-stage">
+      <img id="imagePreviewContent" src="" alt="Bug 附件大图预览">
+    </div>
+  </div>
+
   <div id="loginModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
     <section class="login-modal">
       <div class="developer-modal-header">

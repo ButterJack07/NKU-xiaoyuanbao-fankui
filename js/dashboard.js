@@ -234,12 +234,71 @@
     return '<section class="detail-block ' + (className || '') + '"><h3>' + title + '</h3><p>' + escapeHtml(value).replace(/\n/g, '<br>') + '</p></section>';
   }
 
+  function isImageAttachment(url) {
+    try {
+      var pathname = new URL(url, window.location.href).pathname.toLowerCase();
+      return /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/.test(pathname);
+    } catch (error) {
+      return /\.(png|jpe?g|gif|webp|bmp|svg|avif)(?:\?|#|$)/i.test(url);
+    }
+  }
+
+  function attachmentName(url, index) {
+    try {
+      var name = decodeURIComponent(new URL(url, window.location.href).pathname.split('/').pop() || '');
+      return name.replace(/^[0-9a-f-]{36}-/i, '') || '附件 ' + (index + 1);
+    } catch (error) {
+      return '附件 ' + (index + 1);
+    }
+  }
+
+  function renderAttachments(urls) {
+    if (!urls || !urls.length) return '';
+    var imageItems = [];
+    var fileItems = [];
+    urls.forEach(function (url, index) {
+      var safeUrl = escapeHtml(url);
+      var name = attachmentName(url, index);
+      if (isImageAttachment(url)) {
+        imageItems.push('<button class="attachment-thumbnail" type="button" data-preview-url="' + safeUrl + '" data-preview-name="' + escapeHtml(name) + '" aria-label="预览图片 ' + escapeHtml(name) + '"><img src="' + safeUrl + '" alt="' + escapeHtml(name) + ' 缩略图" loading="lazy"><span><strong>' + escapeHtml(name) + '</strong><small>点击查看大图</small></span></button>');
+      } else {
+        fileItems.push('<a class="attachment-link" href="' + safeUrl + '" target="_blank" rel="noopener">' + escapeHtml(name) + ' ↗</a>');
+      }
+    });
+    return '<section class="detail-block"><h3>附件</h3>' + (imageItems.length ? '<div class="attachment-gallery">' + imageItems.join('') + '</div>' : '') + (fileItems.length ? '<div class="attachment-list">' + fileItems.join('') + '</div>' : '') + '</section>';
+  }
+
+  function bindAttachmentPreviews() {
+    document.querySelectorAll('.attachment-thumbnail').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openImagePreview(button.dataset.previewUrl, button.dataset.previewName);
+      });
+    });
+  }
+
+  function openImagePreview(url, name) {
+    var modal = document.getElementById('imagePreviewModal');
+    document.getElementById('imagePreviewContent').src = url;
+    document.getElementById('imagePreviewTitle').textContent = name || '附件图片';
+    document.getElementById('openOriginalImage').href = url;
+    modal.classList.remove('hidden');
+    document.body.classList.add('drawer-open');
+  }
+
+  function closeImagePreview() {
+    var modal = document.getElementById('imagePreviewModal');
+    if (modal.classList.contains('hidden')) return;
+    modal.classList.add('hidden');
+    document.getElementById('imagePreviewContent').src = '';
+    if (document.getElementById('developerModal').classList.contains('hidden') && document.getElementById('loginModal').classList.contains('hidden') && !drawer.classList.contains('open')) {
+      document.body.classList.remove('drawer-open');
+    }
+  }
+
   function renderDrawer(bug) {
     document.getElementById('drawerCode').textContent = '#' + bug.id.slice(0, 8).toUpperCase() + ' · ' + formatDate(bug.created_at, true);
     document.getElementById('drawerTitle').textContent = bug.title;
-    var attachments = (bug.attachment_urls || []).map(function (url, index) {
-      return '<a class="attachment-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">附件 ' + (index + 1) + ' ↗</a>';
-    }).join('');
+    var attachments = renderAttachments(bug.attachment_urls || []);
     var departments = uniqueDepartments();
     if (bug.assignee_department && departments.indexOf(bug.assignee_department) === -1) departments.push(bug.assignee_department);
     var departmentOptions = '<option value="">暂不分配部门</option>' + departments.map(function (department) {
@@ -252,7 +311,7 @@
       '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>团队</dt><dd>' + escapeHtml(bug.team || '—') + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
       detailBlock('问题描述', bug.description) + detailBlock('复现步骤', bug.repro_steps, 'numbered-text') +
       detailBlock('预期结果', bug.expected_result) + detailBlock('实际结果', bug.actual_result) +
-      (attachments ? '<section class="detail-block"><h3>附件</h3><div class="attachment-list">' + attachments + '</div></section>' : '') +
+      attachments +
       '<section class="fix-panel"><div class="fix-panel-title"><span>FIX PLAN</span><h3>修复计划</h3></div>' +
         '<form id="fixForm">' +
           '<label class="field field-full"><span>处理方案</span><textarea name="fix_plan" rows="5" maxlength="3000" placeholder="填写问题原因、修改方案和验证方式…">' + escapeHtml(bug.fix_plan || '') + '</textarea></label>' +
@@ -268,6 +327,7 @@
     document.getElementById('fixForm').addEventListener('submit', saveFixPlan);
     document.getElementById('assigneeDepartment').addEventListener('change', updateDeveloperSelect);
     document.getElementById('assigneeDeveloper').addEventListener('change', updateAssignmentHint);
+    bindAttachmentPreviews();
     updateAssignmentHint();
   }
 
@@ -456,6 +516,10 @@
   document.getElementById('severityFilter').addEventListener('change', renderList);
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
+  document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);
+  document.getElementById('imagePreviewModal').addEventListener('click', function (event) {
+    if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
+  });
   document.getElementById('openDeveloperModal').addEventListener('click', openDeveloperModal);
   document.getElementById('openLoginModal').addEventListener('click', openLoginModal);
   document.getElementById('loginFromTasks').addEventListener('click', openLoginModal);
@@ -472,9 +536,13 @@
   backdrop.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
-      closeDrawer();
-      closeDeveloperModal();
-      closeLoginModal();
+      if (!document.getElementById('imagePreviewModal').classList.contains('hidden')) {
+        closeImagePreview();
+      } else {
+        closeDrawer();
+        closeDeveloperModal();
+        closeLoginModal();
+      }
     }
   });
 
