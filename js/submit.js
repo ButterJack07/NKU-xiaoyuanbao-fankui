@@ -46,7 +46,14 @@
   function acceptFiles(files) {
     var incoming = Array.from(files);
     if (selectedFiles.length + incoming.length > 3) {
-      showToast('最多只能上传 3 个附件。', 'error');
+      showToast('最多只能上传 3 张图片。', 'error');
+      return;
+    }
+    var invalid = incoming.find(function (file) {
+      return !['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'].includes(file.type);
+    });
+    if (invalid) {
+      showToast(invalid.name + ' 不是支持的图片格式。', 'error');
       return;
     }
     var oversized = incoming.find(function (file) { return file.size > 20 * 1024 * 1024; });
@@ -93,7 +100,7 @@
     }
 
     submitButton.disabled = true;
-    submitButton.querySelector('span').textContent = selectedFiles.length ? '正在上传附件…' : '正在提交…';
+      submitButton.querySelector('span').textContent = selectedFiles.length ? '正在上传图片…' : '正在提交…';
 
     try {
       var attachmentUrls = [];

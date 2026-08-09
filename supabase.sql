@@ -114,7 +114,7 @@ values (
   'bug-attachments',
   true,
   20971520,
-  array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'text/plain', 'application/pdf', 'application/octet-stream']
+  array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif']
 )
 on conflict (id) do update set
   public = excluded.public,

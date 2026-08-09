@@ -60,7 +60,7 @@
       headers: {
         apikey: config.supabaseAnonKey,
         Authorization: 'Bearer ' + config.supabaseAnonKey,
-        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Type': file.type,
         'x-upsert': 'false'
       },
       body: file

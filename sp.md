@@ -1,10 +1,10 @@
 # Supabase 配置指南
 
-本文说明如何为校园宝 Bug 反馈平台配置 Supabase 数据库和附件存储。
+本文说明如何为校园宝 Bug 反馈平台配置 Supabase 数据库和问题图片存储。
 
 配置完成后：
 
-- `submit.html` 可以提交 Bug 信息并上传附件。
+- `submit.html` 可以提交 Bug 信息并上传问题图片。
 - `index.html` 可以读取 Bug 列表、填写修复计划、指定负责人并标记问题为已解决。
 - 浏览器通过 Supabase REST API 和 Storage API 直接访问数据，不需要自建后端。
 
@@ -51,9 +51,9 @@ supabase.sql
 - 创建状态和创建时间索引。
 - 开启 Row Level Security（RLS）。
 - 创建 Bug 查询、提交和更新策略。
-- 创建公开附件桶 `bug-attachments`。
-- 限制附件最大为 20 MB。
-- 创建附件上传和读取策略。
+- 创建公开图片桶 `bug-attachments`。
+- 限制单张图片最大为 20 MB。
+- 创建图片上传和读取策略。
 
 脚本使用了 `if not exists` 和 `drop policy if exists`，因此在调整策略后可以重新执行。
 
@@ -79,7 +79,7 @@ supabase.sql
 | `repro_steps` | `text` | 复现步骤 |
 | `expected_result` | `text` | 预期结果 |
 | `actual_result` | `text` | 实际结果 |
-| `attachment_urls` | `text[]` | 附件公开地址数组 |
+| `attachment_urls` | `text[]` | 问题图片公开地址数组 |
 | `status` | `text` | `open`、`in_progress` 或 `resolved` |
 | `fix_plan` | `text` | 开发人员填写的修复计划 |
 | `assignee` | `text` | 修复负责人 |
@@ -119,7 +119,7 @@ xiaoyuanbao-current-developer
 
 ---
 
-## 4. 检查附件 Storage
+## 4. 检查图片 Storage
 
 在 Supabase 左侧打开 **Storage**，确认存在：
 
@@ -130,10 +130,10 @@ bug-attachments
 当前配置：
 
 - Bucket 为公开读取。
-- 匿名用户可以上传附件。
+- 匿名用户可以上传图片。
 - 单个文件最大 20 MB。
-- 支持 PNG、JPEG、GIF、WebP、TXT、LOG 和 PDF 等文件。
-- 网站 A 最多允许每条 Bug 选择 3 个附件。
+- 仅支持 PNG、JPEG、GIF、WebP、BMP 和 AVIF 图片。
+- 网站 A 最多允许每条 Bug 选择 3 张图片。
 
 如果 Storage 中没有该 Bucket，通常表示 `supabase.sql` 没有完整执行。重新执行脚本并检查 SQL Editor 返回的错误。
 
@@ -260,7 +260,7 @@ python -m http.server 8090
 
 1. 打开 `submit.html`。
 2. 填写所有必填项。
-3. 可选择一个小于 20 MB 的图片或文本附件。
+3. 可选择一张小于 20 MB 的受支持图片。
 4. 点击“提交 Bug 反馈”。
 5. 页面应显示提交成功和 Bug 编号。
 6. 返回 Supabase **Table Editor**。
@@ -283,13 +283,13 @@ python -m http.server 8090
 6. Bug 状态应变成“已解决”。
 7. 在 Table Editor 中检查 `status`、`fix_plan`、`assignee` 和 `resolved_at`。
 
-### 8.4 验证附件
+### 8.4 验证问题图片
 
 1. 在 Supabase 左侧打开 **Storage**。
 2. 进入 `bug-attachments`。
 3. 检查按日期生成的目录。
-4. 在网站 B 的 Bug 详情中点击附件链接。
-5. 浏览器应能正常打开或下载附件。
+4. 在网站 B 的 Bug 详情中点击图片缩略图。
+5. 当前页面应弹出图片大图预览。
 
 ---
 
@@ -313,7 +313,7 @@ GET {SUPABASE_URL}/rest/v1/bugs?select=...&order=created_at.desc
 PATCH {SUPABASE_URL}/rest/v1/bugs?id=eq.{BUG_ID}
 ```
 
-### 上传附件
+### 上传图片
 
 ```http
 POST {SUPABASE_URL}/storage/v1/object/bug-attachments/{FILE_PATH}
@@ -327,7 +327,7 @@ Authorization: Bearer <SUPABASE_ANON_KEY>
 Content-Type: application/json
 ```
 
-附件上传的 `Content-Type` 根据文件类型设置。
+图片上传的 `Content-Type` 根据图片格式设置。
 
 ---
 
@@ -347,7 +347,7 @@ Content-Type: application/json
 - 初始修复计划必须为空。
 - 初始负责人必须为空。
 - 初始解决时间必须为空。
-- 附件地址不能超过 3 个。
+- 图片地址不能超过 3 个。
 
 这可以阻止提交端直接创建伪造的“已解决”记录，但当前仍属于匿名内部访问方案。
 
@@ -406,17 +406,15 @@ your-anon-or-publishable-key
 - `bugs` 表是否存在 `select` RLS 策略。
 - 浏览器控制台是否有跨域、网络或 JavaScript 错误。
 
-### 附件上传失败
+### 图片上传失败
 
 检查：
 
 - Storage 中是否存在 `bug-attachments`。
 - 文件是否超过 20 MB。
-- 文件类型是否被允许。
+- 图片格式是否为 PNG、JPEG、GIF、WebP、BMP 或 AVIF。
 - `storage.objects` 是否存在上传策略。
 - Bucket 是否配置为 Public。
-
-`.log` 文件在部分浏览器中可能被识别为 `application/octet-stream`，初始化 SQL 已允许该类型。
 
 ### 修改修复计划失败
 
@@ -450,7 +448,7 @@ your-anon-or-publishable-key
 | 查询 Bug | `200` |
 | 新建 Bug | `201` |
 | 更新 Bug | `200` |
-| 上传附件 | `200` |
+| 上传图片 | `200` |
 
 ---
 
@@ -488,7 +486,7 @@ your-anon-or-publishable-key
 - [ ] `js/config.js` 已填写 anon/publishable key。
 - [ ] 前端没有填写数据库密码或 service role key。
 - [ ] 网站 A 可以提交 Bug。
-- [ ] 网站 A 可以上传附件。
+- [ ] 网站 A 可以上传问题图片。
 - [ ] 网站 B 可以读取 Bug。
 - [ ] 网站 B 可以保存修复计划。
 - [ ] 网站 B 可以标记 Bug 为已解决。
