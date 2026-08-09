@@ -212,7 +212,6 @@
       article.tabIndex = 0;
       article.setAttribute('role', 'button');
       article.innerHTML =
-        '<div class="bug-status-line status-' + escapeHtml(bug.status) + '"></div>' +
         '<div class="bug-main">' +
           '<div class="bug-meta"><span>#' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</span><span>' + escapeHtml(bug.module) + '</span><span>' + formatDate(bug.created_at) + '</span></div>' +
           '<h3>' + escapeHtml(bug.title) + '</h3>' +
