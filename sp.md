@@ -1,6 +1,6 @@
 # Supabase 配置指南
 
-本文说明如何为 Patchwork Bug 反馈系统配置 Supabase 数据库和附件存储。
+本文说明如何为校园宝 Bug 反馈平台配置 Supabase 数据库和附件存储。
 
 配置完成后：
 
@@ -470,4 +470,4 @@ your-anon-or-publishable-key
 - [ ] 网站 B 可以保存修复计划。
 - [ ] 网站 B 可以标记 Bug 为已解决。
 
-完成以上步骤后，Patchwork 即可通过 Supabase 在两个页面之间同步 Bug 数据。
+完成以上步骤后，校园宝 Bug 反馈平台即可通过 Supabase 在两个页面之间同步 Bug 数据。
