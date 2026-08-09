@@ -46,6 +46,8 @@ supabase.sql
 该脚本会自动完成：
 
 - 创建 `public.bugs` 表。
+- 创建独立的 `public.developers` 开发人员目录表。
+- 为 Bug 增加负责部门和开发人员关联字段。
 - 创建状态和创建时间索引。
 - 开启 Row Level Security（RLS）。
 - 创建 Bug 查询、提交和更新策略。
@@ -93,6 +95,19 @@ severity: blocker / critical / major / minor
 priority: urgent / high / medium / low
 status: open / in_progress / resolved
 ```
+
+### developers 开发人员表
+
+| 字段 | 类型 | 用途 |
+|---|---|---|
+| `id` | `uuid` | 开发人员唯一编号 |
+| `name` | `text` | 姓名 |
+| `department` | `text` | 所属或负责部门 |
+| `role` | `text` | 岗位和职责 |
+| `contact` | `text` | 邮箱、企业微信或其他联系方式 |
+| `active` | `boolean` | 是否仍在分配列表中 |
+
+看板登记开发人员后，会将信息写入该表。分配任务时可以先选择部门，再选择该部门中的具体开发人员；只选部门时表示由部门统一负责、成员后续认领。
 
 ---
 

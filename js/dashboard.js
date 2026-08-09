@@ -2,6 +2,7 @@
   'use strict';
 
   var bugs = [];
+  var developers = [];
   var currentStatus = 'all';
   var currentBugId = null;
   var bugList = document.getElementById('bugList');
@@ -47,13 +48,37 @@
     document.getElementById('statResolved').textContent = bugs.filter(function (bug) { return bug.status === 'resolved'; }).length;
   }
 
+  function uniqueDepartments() {
+    return developers.map(function (developer) { return developer.department; }).filter(function (department, index, rows) {
+      return department && rows.indexOf(department) === index;
+    });
+  }
+
+  function renderDeveloperDirectory() {
+    var list = document.getElementById('developerList');
+    var suggestions = document.getElementById('departmentSuggestions');
+    document.getElementById('developerCount').textContent = developers.length + ' 人';
+    suggestions.innerHTML = uniqueDepartments().map(function (department) {
+      return '<option value="' + escapeHtml(department) + '"></option>';
+    }).join('');
+
+    if (!developers.length) {
+      list.innerHTML = '<div class="directory-empty">尚未登记开发人员</div>';
+      return;
+    }
+
+    list.innerHTML = developers.map(function (developer) {
+      return '<article class="developer-card"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><div><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + (developer.role ? ' · ' + escapeHtml(developer.role) : '') + '</small></div>' + (developer.contact ? '<a href="mailto:' + escapeHtml(developer.contact) + '" title="' + escapeHtml(developer.contact) + '">联系</a>' : '') + '</article>';
+    }).join('');
+  }
+
   function filteredBugs() {
     var query = document.getElementById('searchInput').value.trim().toLowerCase();
     var severity = document.getElementById('severityFilter').value;
     return bugs.filter(function (bug) {
       var matchesStatus = currentStatus === 'all' || bug.status === currentStatus;
       var matchesSeverity = severity === 'all' || bug.severity === severity;
-      var haystack = [bug.title, bug.module, bug.reporter, bug.team, bug.assignee].join(' ').toLowerCase();
+      var haystack = [bug.title, bug.module, bug.reporter, bug.team, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
       return matchesStatus && matchesSeverity && (!query || haystack.includes(query));
     });
   }
@@ -78,7 +103,7 @@
           '<p>' + escapeHtml(bug.description) + '</p>' +
           '<div class="bug-tags"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity] || bug.severity) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority] || bug.priority) + '</span></div>' +
         '</div>' +
-        '<div class="bug-owner"><span>' + (bug.assignee ? escapeHtml(bug.assignee.slice(0, 1).toUpperCase()) : '?') + '</span><div><small>负责人</small><strong>' + escapeHtml(bug.assignee || '待分配') + '</strong></div></div>' +
+        '<div class="bug-owner"><span>' + (bug.assignee ? escapeHtml(bug.assignee.slice(0, 1).toUpperCase()) : (bug.assignee_department ? '部' : '?')) + '</span><div><small>' + escapeHtml(bug.assignee_department || '负责人') + '</small><strong>' + escapeHtml(bug.assignee || (bug.assignee_department ? '部门待认领' : '待分配')) + '</strong></div></div>' +
         '<div class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status] || bug.status) + '</div>' +
         '<span class="row-arrow">→</span>';
       article.addEventListener('click', function () { openDrawer(bug.id); });
@@ -100,6 +125,12 @@
     var attachments = (bug.attachment_urls || []).map(function (url, index) {
       return '<a class="attachment-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">附件 ' + (index + 1) + ' ↗</a>';
     }).join('');
+    var departments = uniqueDepartments();
+    if (bug.assignee_department && departments.indexOf(bug.assignee_department) === -1) departments.push(bug.assignee_department);
+    var departmentOptions = '<option value="">暂不分配部门</option>' + departments.map(function (department) {
+      return '<option value="' + escapeHtml(department) + '" ' + (department === bug.assignee_department ? 'selected' : '') + '>' + escapeHtml(department) + '</option>';
+    }).join('');
+    var developerOptions = buildDeveloperOptions(bug.assignee_department, bug.assignee_id, bug.assignee);
 
     document.getElementById('drawerContent').innerHTML =
       '<div class="detail-badges"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity]) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority]) + '</span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span></div>' +
@@ -110,12 +141,56 @@
       '<section class="fix-panel"><div class="fix-panel-title"><span>FIX PLAN</span><h3>修复计划</h3></div>' +
         '<form id="fixForm">' +
           '<label class="field field-full"><span>处理方案</span><textarea name="fix_plan" rows="5" maxlength="3000" placeholder="填写问题原因、修改方案和验证方式…">' + escapeHtml(bug.fix_plan || '') + '</textarea></label>' +
-          '<div class="field-row"><label class="field"><span>负责人</span><input name="assignee" maxlength="40" value="' + escapeHtml(bug.assignee || '') + '" placeholder="开发负责人"></label><label class="field"><span>计划完成日</span><input name="target_date" type="date" value="' + escapeHtml(bug.target_date || '') + '"></label></div>' +
+          '<div class="assignment-box"><div class="assignment-heading"><strong>快速分配</strong><small>先选负责部门，再从该部门选择具体人员</small></div>' +
+            '<div class="field-row"><label class="field"><span>负责部门</span><select id="assigneeDepartment" name="assignee_department">' + departmentOptions + '</select></label><label class="field"><span>负责人员</span><select id="assigneeDeveloper" name="assignee_id">' + developerOptions + '</select></label></div>' +
+            '<p id="assignmentHint" class="assignment-hint"></p>' +
+          '</div>' +
+          '<label class="field field-full"><span>计划完成日</span><input name="target_date" type="date" value="' + escapeHtml(bug.target_date || '') + '"></label>' +
           '<label class="resolve-check"><input name="resolved" type="checkbox" ' + (bug.status === 'resolved' ? 'checked' : '') + '><span class="check-box">✓</span><span><strong>标记为已解决</strong><small>勾选后，该问题会进入已解决列表</small></span></label>' +
           '<button class="button button-primary button-full" type="submit">保存修复计划 →</button>' +
         '</form></section>';
 
     document.getElementById('fixForm').addEventListener('submit', saveFixPlan);
+    document.getElementById('assigneeDepartment').addEventListener('change', updateDeveloperSelect);
+    document.getElementById('assigneeDeveloper').addEventListener('change', updateAssignmentHint);
+    updateAssignmentHint();
+  }
+
+  function buildDeveloperOptions(department, selectedId, legacyName) {
+    var matching = developers.filter(function (developer) {
+      return !department || developer.department === department;
+    });
+    var options = '<option value="">' + (department ? '部门统一负责 / 待认领' : '暂不指定人员') + '</option>';
+    options += matching.map(function (developer) {
+      return '<option value="' + escapeHtml(developer.id) + '" ' + (developer.id === selectedId ? 'selected' : '') + '>' + escapeHtml(developer.name) + (department ? '' : ' · ' + escapeHtml(developer.department)) + '</option>';
+    }).join('');
+    if (legacyName && !developers.some(function (developer) { return developer.id === selectedId; })) {
+      options += '<option value="legacy" selected>' + escapeHtml(legacyName) + '（原记录）</option>';
+    }
+    return options;
+  }
+
+  function updateDeveloperSelect() {
+    var department = document.getElementById('assigneeDepartment').value;
+    var select = document.getElementById('assigneeDeveloper');
+    select.innerHTML = buildDeveloperOptions(department, '', '');
+    updateAssignmentHint();
+  }
+
+  function updateAssignmentHint() {
+    var departmentSelect = document.getElementById('assigneeDepartment');
+    var developerSelect = document.getElementById('assigneeDeveloper');
+    var hint = document.getElementById('assignmentHint');
+    if (!departmentSelect || !developerSelect || !hint) return;
+    var developer = developers.find(function (item) { return item.id === developerSelect.value; });
+    if (developer) {
+      if (departmentSelect.value !== developer.department) departmentSelect.value = developer.department;
+      hint.textContent = '将分配给 ' + developer.department + ' 的 ' + developer.name + (developer.role ? '（' + developer.role + '）' : '') + '。';
+    } else if (departmentSelect.value) {
+      hint.textContent = '将分配给 ' + departmentSelect.value + '，由部门内部认领。';
+    } else {
+      hint.textContent = '当前任务尚未分配。';
+    }
   }
 
   function openDrawer(id) {
@@ -143,10 +218,17 @@
     var formData = new FormData(event.currentTarget);
     var resolved = formData.get('resolved') === 'on';
     var current = bugs.find(function (bug) { return bug.id === currentBugId; });
-    var status = resolved ? 'resolved' : (formData.get('fix_plan').trim() || formData.get('assignee').trim() ? 'in_progress' : 'open');
+    var selectedDeveloperId = formData.get('assignee_id');
+    var developer = developers.find(function (item) { return item.id === selectedDeveloperId; });
+    var keepLegacyAssignment = selectedDeveloperId === 'legacy';
+    var department = developer ? developer.department : (keepLegacyAssignment ? current.assignee_department : formData.get('assignee_department'));
+    var assignee = developer ? developer.name : (keepLegacyAssignment ? current.assignee : '');
+    var status = resolved ? 'resolved' : (formData.get('fix_plan').trim() || department || assignee ? 'in_progress' : 'open');
     var patch = {
       fix_plan: formData.get('fix_plan').trim(),
-      assignee: formData.get('assignee').trim(),
+      assignee: assignee,
+      assignee_department: department,
+      assignee_id: developer ? developer.id : (keepLegacyAssignment ? current.assignee_id : null),
       target_date: formData.get('target_date') || null,
       status: status,
       resolved_at: resolved ? (current.resolved_at || new Date().toISOString()) : null,
@@ -186,6 +268,48 @@
     }
   }
 
+  async function loadDevelopers() {
+    developers = await window.PatchworkAPI.listDevelopers();
+    renderDeveloperDirectory();
+  }
+
+  function openDeveloperModal() {
+    document.getElementById('developerModal').classList.remove('hidden');
+    document.body.classList.add('drawer-open');
+  }
+
+  function closeDeveloperModal() {
+    document.getElementById('developerModal').classList.add('hidden');
+    document.body.classList.remove('drawer-open');
+  }
+
+  async function saveDeveloper(event) {
+    event.preventDefault();
+    var button = document.getElementById('saveDeveloperButton');
+    var data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    data.name = data.name.trim();
+    data.department = data.department.trim();
+    data.role = data.role.trim();
+    data.contact = data.contact.trim();
+    data.active = true;
+    button.disabled = true;
+    button.textContent = '正在登记…';
+    try {
+      var rows = await window.PatchworkAPI.createDeveloper(data);
+      developers.push(rows[0]);
+      developers.sort(function (a, b) { return (a.department + a.name).localeCompare(b.department + b.name, 'zh-CN'); });
+      renderDeveloperDirectory();
+      event.currentTarget.reset();
+      showToast('开发人员已登记，可在任务中快速分配。', 'success');
+    } catch (error) {
+      var message = error.message && error.message.includes('duplicate key') ? '该人员已在此部门登记。' : (error.message || '登记失败，请稍后重试。');
+      showToast(message, 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = '登记并加入分配列表 →';
+    }
+  }
+
   document.querySelectorAll('.filter-chip').forEach(function (button) {
     button.addEventListener('click', function () {
       document.querySelectorAll('.filter-chip').forEach(function (item) { item.classList.remove('active'); });
@@ -198,12 +322,23 @@
   document.getElementById('severityFilter').addEventListener('change', renderList);
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
+  document.getElementById('openDeveloperModal').addEventListener('click', openDeveloperModal);
+  document.getElementById('closeDeveloperModal').addEventListener('click', closeDeveloperModal);
+  document.getElementById('developerModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeDeveloperModal(); });
+  document.getElementById('developerForm').addEventListener('submit', saveDeveloper);
   backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeDrawer(); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      closeDrawer();
+      closeDeveloperModal();
+    }
+  });
 
   if (!window.PatchworkAPI.isConfigured()) {
     configNotice.textContent = '当前为未连接状态：请在 js/config.js 填入 Supabase 配置，并执行 supabase.sql。';
     configNotice.classList.remove('hidden');
   }
-  loadBugs();
+  Promise.all([loadDevelopers(), loadBugs()]).catch(function (error) {
+    showToast(error.message || '团队信息加载失败，请确认已执行最新 supabase.sql。', 'error');
+  });
 })();

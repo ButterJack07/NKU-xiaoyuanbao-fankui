@@ -24,10 +24,39 @@ create table if not exists public.bugs (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.developers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 1 and 40),
+  department text not null check (char_length(department) between 1 and 60),
+  role text not null default '' check (char_length(role) <= 60),
+  contact text not null default '' check (char_length(contact) <= 120),
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (name, department)
+);
+
+alter table public.bugs add column if not exists assignee_department text not null default '';
+alter table public.bugs add column if not exists assignee_id uuid references public.developers(id) on delete set null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'bugs_assignee_department_length'
+  ) then
+    alter table public.bugs
+      add constraint bugs_assignee_department_length check (char_length(assignee_department) <= 60);
+  end if;
+end $$;
+
 create index if not exists bugs_status_idx on public.bugs (status);
 create index if not exists bugs_created_at_idx on public.bugs (created_at desc);
+create index if not exists bugs_assignee_id_idx on public.bugs (assignee_id);
+create index if not exists bugs_assignee_department_idx on public.bugs (assignee_department);
+create index if not exists developers_department_idx on public.developers (department);
 
 alter table public.bugs enable row level security;
+alter table public.developers enable row level security;
 
 drop policy if exists "internal read bugs" on public.bugs;
 create policy "internal read bugs"
@@ -53,6 +82,30 @@ with check (
   status in ('open', 'in_progress', 'resolved')
   and char_length(fix_plan) <= 3000
   and char_length(assignee) <= 40
+  and char_length(assignee_department) <= 60
+);
+
+drop policy if exists "internal read developers" on public.developers;
+create policy "internal read developers"
+on public.developers for select to anon
+using (true);
+
+drop policy if exists "internal create developers" on public.developers;
+create policy "internal create developers"
+on public.developers for insert to anon
+with check (
+  active = true
+  and char_length(name) between 1 and 40
+  and char_length(department) between 1 and 60
+);
+
+drop policy if exists "internal update developers" on public.developers;
+create policy "internal update developers"
+on public.developers for update to anon
+using (true)
+with check (
+  char_length(name) between 1 and 40
+  and char_length(department) between 1 and 60
 );
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

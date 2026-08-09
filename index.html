@@ -21,7 +21,10 @@
       <a class="active" href="index.html">修复看板</a>
       <a href="submit.html">提交 Bug</a>
     </nav>
-    <a class="button button-primary button-small" href="submit.html">+ 新建反馈</a>
+    <div class="top-actions">
+      <button id="openDeveloperModal" class="button button-ghost button-small" type="button">登记开发人员</button>
+      <a class="button button-primary button-small" href="submit.html">+ 新建反馈</a>
+    </div>
   </header>
 
   <main class="dashboard-shell">
@@ -111,6 +114,49 @@
     </div>
     <div id="drawerContent" class="drawer-content"></div>
   </aside>
+
+  <div id="developerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="developerModalTitle">
+    <section class="developer-modal">
+      <div class="developer-modal-header">
+        <div>
+          <p class="eyebrow">TEAM DIRECTORY</p>
+          <h2 id="developerModalTitle">开发人员登记</h2>
+          <p>登记后，人员和部门会立即进入 Bug 快速分配列表。</p>
+        </div>
+        <button id="closeDeveloperModal" class="icon-button" type="button" aria-label="关闭开发人员登记">×</button>
+      </div>
+      <form id="developerForm" class="developer-form">
+        <div class="field-row">
+          <label class="field">
+            <span>姓名 <i>*</i></span>
+            <input name="name" maxlength="40" required placeholder="开发人员姓名">
+          </label>
+          <label class="field">
+            <span>负责部门 <i>*</i></span>
+            <input name="department" maxlength="60" required list="departmentSuggestions" placeholder="例如：前端开发组">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>岗位 / 职责</span>
+            <input name="role" maxlength="60" placeholder="例如：Web 前端开发">
+          </label>
+          <label class="field">
+            <span>联系方式</span>
+            <input name="contact" maxlength="120" placeholder="邮箱、企业微信或手机号">
+          </label>
+        </div>
+        <button id="saveDeveloperButton" class="button button-primary button-full" type="submit">登记并加入分配列表 →</button>
+      </form>
+      <div class="directory-heading">
+        <span>当前已登记</span>
+        <strong id="developerCount">0 人</strong>
+      </div>
+      <div id="developerList" class="developer-list"></div>
+    </section>
+  </div>
+
+  <datalist id="departmentSuggestions"></datalist>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
