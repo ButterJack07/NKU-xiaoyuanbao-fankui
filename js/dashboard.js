@@ -159,7 +159,7 @@
       list.classList.remove('hidden');
       list.innerHTML = developers.map(function (developer) {
         var isCurrent = currentDeveloper && currentDeveloper.id === developer.id;
-        return '<button class="login-developer-card ' + (isCurrent ? 'is-current' : '') + '" type="button" data-developer-id="' + escapeHtml(developer.id) + '"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><span><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + (developer.role ? ' · ' + escapeHtml(developer.role) : '') + '</small></span><b>' + (isCurrent ? '当前身份 ✓' : '登录 →') + '</b></button>';
+        return '<button class="login-developer-card ' + (isCurrent ? 'is-current' : '') + '" type="button" data-developer-id="' + escapeHtml(developer.id) + '"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><span><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + '</small></span><b>' + (isCurrent ? '当前身份 ✓' : '登录 →') + '</b></button>';
       }).join('');
       list.querySelectorAll('.login-developer-card').forEach(function (button) {
         button.addEventListener('click', function () {
@@ -185,7 +185,7 @@
     }
 
     list.innerHTML = developers.map(function (developer) {
-      return '<article class="developer-card"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><div><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + (developer.role ? ' · ' + escapeHtml(developer.role) : '') + '</small></div>' + (developer.contact ? '<a href="mailto:' + escapeHtml(developer.contact) + '" title="' + escapeHtml(developer.contact) + '">联系</a>' : '') + '</article>';
+      return '<article class="developer-card"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><div><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + '</small></div></article>';
     }).join('');
   }
 
@@ -195,7 +195,7 @@
     return bugs.filter(function (bug) {
       var matchesStatus = currentStatus === 'all' || bug.status === currentStatus;
       var matchesSeverity = severity === 'all' || bug.severity === severity;
-      var haystack = [bug.title, bug.module, bug.reporter, bug.team, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
+      var haystack = [bug.title, bug.module, bug.reporter, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
       return matchesStatus && matchesSeverity && (!query || haystack.includes(query));
     });
   }
@@ -354,7 +354,7 @@
 
     document.getElementById('drawerContent').innerHTML =
       '<div class="detail-badges"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity]) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority]) + '</span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span></div>' +
-      '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>团队</dt><dd>' + escapeHtml(bug.team || '—') + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
+      '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
       detailBlock('问题描述', bug.description) + detailBlock('复现步骤', bug.repro_steps, 'numbered-text') +
       detailBlock('预期结果', bug.expected_result) + detailBlock('实际结果', bug.actual_result) +
       attachments +
@@ -406,7 +406,7 @@
     var developer = developers.find(function (item) { return item.id === developerSelect.value; });
     if (developer) {
       if (departmentSelect.value !== developer.department) departmentSelect.value = developer.department;
-      hint.textContent = '将分配给 ' + developer.department + ' 的 ' + developer.name + (developer.role ? '（' + developer.role + '）' : '') + '。';
+      hint.textContent = '将分配给 ' + developer.department + ' 的 ' + developer.name + '。';
     } else if (departmentSelect.value) {
       hint.textContent = '将直接分配给 ' + departmentSelect.value + '，该部门每位成员都能在“分配给我的任务”中看到。';
     } else {
@@ -528,8 +528,6 @@
     var data = Object.fromEntries(new FormData(event.currentTarget).entries());
     data.name = data.name.trim();
     data.department = data.department.trim();
-    data.role = data.role.trim();
-    data.contact = data.contact.trim();
     data.active = true;
     button.disabled = true;
     button.textContent = '正在登记…';

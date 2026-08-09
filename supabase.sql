@@ -6,7 +6,6 @@ create table if not exists public.bugs (
   title text not null check (char_length(title) between 1 and 120),
   description text not null check (char_length(description) between 1 and 3000),
   reporter text not null check (char_length(reporter) between 1 and 40),
-  team text not null default '' check (char_length(team) <= 60),
   module text not null check (char_length(module) between 1 and 60),
   environment text not null default '' check (char_length(environment) <= 200),
   severity text not null default 'major' check (severity in ('blocker', 'critical', 'major', 'minor')),
@@ -28,13 +27,16 @@ create table if not exists public.developers (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 40),
   department text not null check (char_length(department) between 1 and 60),
-  role text not null default '' check (char_length(role) <= 60),
-  contact text not null default '' check (char_length(contact) <= 120),
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (name, department)
 );
+
+-- 兼容旧版数据库：移除已废弃的提交团队、人员职能和联系方式字段。
+alter table public.bugs drop column if exists team;
+alter table public.developers drop column if exists role;
+alter table public.developers drop column if exists contact;
 
 alter table public.bugs add column if not exists assignee_department text not null default '';
 alter table public.bugs add column if not exists assignee_id uuid references public.developers(id) on delete set null;

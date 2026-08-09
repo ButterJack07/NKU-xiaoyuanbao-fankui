@@ -71,7 +71,6 @@ supabase.sql
 | `title` | `text` | 问题标题 |
 | `description` | `text` | 问题描述 |
 | `reporter` | `text` | 反馈人 |
-| `team` | `text` | 反馈人所属团队 |
 | `module` | `text` | 出现问题的功能模块 |
 | `environment` | `text` | 系统、浏览器、版本或服务器环境 |
 | `severity` | `text` | 严重程度 |
@@ -103,8 +102,6 @@ status: open / in_progress / resolved
 | `id` | `uuid` | 开发人员唯一编号 |
 | `name` | `text` | 姓名 |
 | `department` | `text` | 所属或负责部门 |
-| `role` | `text` | 岗位和职责 |
-| `contact` | `text` | 邮箱、企业微信或其他联系方式 |
 | `active` | `boolean` | 是否仍在分配列表中 |
 
 看板登记开发人员后，会将信息写入该表。分配任务时可以先选择部门，再选择该部门中的具体开发人员；只选择部门时，任务会直接分配给整个部门，该部门每位已登记成员登录后都能看到。
