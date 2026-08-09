@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="向开发组提交 Bug 反馈">
+  <title>Patchwork · 提交 Bug</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="submit-page">
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Patchwork 首页">
+      <span class="brand-mark">P</span>
+      <span><strong>PATCHWORK</strong><small>ISSUE CONTROL</small></span>
+    </a>
+    <nav class="topnav" aria-label="主导航">
+      <a href="index.html">修复看板</a>
+      <a class="active" href="submit.html">提交 Bug</a>
+    </nav>
+    <a class="button button-ghost button-small" href="index.html">查看看板 →</a>
+  </header>
+
+  <main class="submit-shell">
+    <section class="submit-intro reveal">
+      <p class="eyebrow">REPORT AN ISSUE</p>
+      <h1>发现问题？<br><em>把线索交给我们。</em></h1>
+      <p>清晰的复现步骤能帮助开发人员更快定位问题。提交后，你可以在修复看板持续关注处理进度。</p>
+      <div class="report-guide">
+        <span>01 <b>描述现象</b></span>
+        <span>02 <b>提供步骤</b></span>
+        <span>03 <b>等待修复</b></span>
+      </div>
+    </section>
+
+    <section class="form-card reveal delay-1">
+      <div class="form-card-heading">
+        <div>
+          <p class="eyebrow">NEW REPORT</p>
+          <h2>Bug 反馈单</h2>
+        </div>
+        <span class="required-note"><i>*</i> 为必填项</span>
+      </div>
+
+      <div id="configNotice" class="notice hidden" role="status"></div>
+
+      <form id="bugForm">
+        <div class="form-section">
+          <span class="section-number">01</span>
+          <div class="section-fields">
+            <h3>基本信息</h3>
+            <label class="field field-full">
+              <span>问题标题 <i>*</i></span>
+              <input name="title" type="text" maxlength="120" required placeholder="用一句话概括遇到的问题">
+            </label>
+            <div class="field-row">
+              <label class="field">
+                <span>反馈人 <i>*</i></span>
+                <input name="reporter" type="text" maxlength="40" required placeholder="你的姓名或花名">
+              </label>
+              <label class="field">
+                <span>所属团队</span>
+                <input name="team" type="text" maxlength="60" placeholder="例如：客户端 / 策划">
+              </label>
+            </div>
+            <div class="field-row field-row-three">
+              <label class="field">
+                <span>功能模块 <i>*</i></span>
+                <input name="module" type="text" maxlength="60" required placeholder="例如：登录模块">
+              </label>
+              <label class="field">
+                <span>严重程度 <i>*</i></span>
+                <select name="severity" required>
+                  <option value="major">主要</option>
+                  <option value="blocker">阻断</option>
+                  <option value="critical">严重</option>
+                  <option value="minor">次要</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>优先级 <i>*</i></span>
+                <select name="priority" required>
+                  <option value="medium">P2 · 中</option>
+                  <option value="urgent">P0 · 紧急</option>
+                  <option value="high">P1 · 高</option>
+                  <option value="low">P3 · 低</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <span class="section-number">02</span>
+          <div class="section-fields">
+            <h3>问题详情</h3>
+            <label class="field field-full">
+              <span>问题描述 <i>*</i></span>
+              <textarea name="description" rows="4" maxlength="3000" required placeholder="描述问题发生时的具体表现和影响…"></textarea>
+            </label>
+            <label class="field field-full">
+              <span>复现步骤 <i>*</i></span>
+              <textarea name="repro_steps" rows="5" maxlength="3000" required placeholder="1. 打开…&#10;2. 点击…&#10;3. 出现…"></textarea>
+            </label>
+            <div class="field-row">
+              <label class="field">
+                <span>预期结果</span>
+                <textarea name="expected_result" rows="3" maxlength="1500" placeholder="正常情况下应该发生什么？"></textarea>
+              </label>
+              <label class="field">
+                <span>实际结果</span>
+                <textarea name="actual_result" rows="3" maxlength="1500" placeholder="实际发生了什么？"></textarea>
+              </label>
+            </div>
+            <label class="field field-full">
+              <span>运行环境</span>
+              <input name="environment" type="text" maxlength="200" placeholder="例如：Windows 11 / Chrome 127 / 测试服 v1.4.2">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <span class="section-number">03</span>
+          <div class="section-fields">
+            <h3>附件证据</h3>
+            <label id="dropzone" class="upload-zone">
+              <input id="attachments" name="attachments" type="file" accept="image/*,.txt,.log,.pdf" multiple>
+              <span class="upload-icon">↑</span>
+              <strong>拖放文件到这里，或点击选择</strong>
+              <small>最多 3 个文件，每个不超过 5 MB；支持图片、日志、TXT 和 PDF</small>
+            </label>
+            <div id="fileList" class="file-list"></div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="button button-ghost" type="reset">清空表单</button>
+          <button id="submitButton" class="button button-primary" type="submit">
+            <span>提交 Bug 反馈</span><b>→</b>
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="successModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="success-modal">
+      <span class="success-mark">✓</span>
+      <p class="eyebrow">REPORT RECEIVED</p>
+      <h2 id="successTitle">反馈已进入修复队列</h2>
+      <p>问题编号 <strong id="successCode"></strong>，开发组可以在看板中查看并制定修复计划。</p>
+      <div class="modal-actions">
+        <button id="submitAnother" class="button button-ghost" type="button">继续提交</button>
+        <a class="button button-primary" href="index.html">前往修复看板 →</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/submit.js"></script>
+</body>
+</html>

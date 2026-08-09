@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="开发组内部 Bug 反馈与修复看板">
+  <title>Patchwork · Bug 修复看板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Patchwork 首页">
+      <span class="brand-mark">P</span>
+      <span><strong>PATCHWORK</strong><small>ISSUE CONTROL</small></span>
+    </a>
+    <nav class="topnav" aria-label="主导航">
+      <a class="active" href="index.html">修复看板</a>
+      <a href="submit.html">提交 Bug</a>
+    </nav>
+    <a class="button button-primary button-small" href="submit.html">+ 新建反馈</a>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="dashboard-hero reveal">
+      <div>
+        <p class="eyebrow">DEVELOPMENT PULSE / 实时同步</p>
+        <h1>问题清晰，<br><em>修复有序。</em></h1>
+      </div>
+      <p class="hero-note">集中查看团队反馈，明确负责人和修复计划，关闭每一个影响体验的问题。</p>
+    </section>
+
+    <div id="configNotice" class="notice hidden" role="status"></div>
+
+    <section class="stats-grid reveal delay-1" aria-label="Bug 统计">
+      <article class="stat-card stat-total">
+        <span>全部问题</span>
+        <strong id="statTotal">—</strong>
+        <small>ALL ISSUES</small>
+      </article>
+      <article class="stat-card stat-open">
+        <span>待处理</span>
+        <strong id="statOpen">—</strong>
+        <small>OPEN</small>
+      </article>
+      <article class="stat-card stat-progress">
+        <span>修复中</span>
+        <strong id="statProgress">—</strong>
+        <small>IN PROGRESS</small>
+      </article>
+      <article class="stat-card stat-resolved">
+        <span>已解决</span>
+        <strong id="statResolved">—</strong>
+        <small>RESOLVED</small>
+      </article>
+    </section>
+
+    <section class="board-panel reveal delay-2">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">ISSUE REGISTER</p>
+          <h2>Bug 列表</h2>
+        </div>
+        <button id="refreshButton" class="icon-button" type="button" title="刷新数据" aria-label="刷新数据">↻</button>
+      </div>
+
+      <div class="toolbar">
+        <label class="search-field">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="搜索标题、模块、反馈人…" autocomplete="off">
+        </label>
+        <div class="filter-group" aria-label="状态筛选">
+          <button class="filter-chip active" type="button" data-status="all">全部</button>
+          <button class="filter-chip" type="button" data-status="open">待处理</button>
+          <button class="filter-chip" type="button" data-status="in_progress">修复中</button>
+          <button class="filter-chip" type="button" data-status="resolved">已解决</button>
+        </div>
+        <select id="severityFilter" class="select-control" aria-label="严重程度筛选">
+          <option value="all">所有等级</option>
+          <option value="blocker">阻断</option>
+          <option value="critical">严重</option>
+          <option value="major">主要</option>
+          <option value="minor">次要</option>
+        </select>
+      </div>
+
+      <div id="loadingState" class="state-box">
+        <span class="loader"></span>
+        <p>正在同步问题列表…</p>
+      </div>
+      <div id="emptyState" class="state-box hidden">
+        <span class="empty-icon">✓</span>
+        <h3>当前视图没有问题</h3>
+        <p>调整筛选条件，或提交一条新的 Bug 反馈。</p>
+      </div>
+      <div id="bugList" class="bug-list hidden" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div id="detailBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="detailDrawer" class="detail-drawer" aria-hidden="true" aria-labelledby="drawerTitle">
+    <div class="drawer-header">
+      <div>
+        <p id="drawerCode" class="eyebrow">BUG</p>
+        <h2 id="drawerTitle">问题详情</h2>
+      </div>
+      <button id="closeDrawer" class="icon-button" type="button" aria-label="关闭详情">×</button>
+    </div>
+    <div id="drawerContent" class="drawer-content"></div>
+  </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
