@@ -291,9 +291,6 @@ h1 em { color: transparent; -webkit-text-stroke: 1.5px var(--ink); font-style: n
 .submit-intro { position: sticky; top: 145px; }
 .submit-intro h1 { font-size: clamp(48px, 5.2vw, 72px); }
 .submit-intro > p:not(.eyebrow) { margin: 30px 0 40px; color: var(--muted); font-size: 14px; }
-.report-guide { display: grid; gap: 0; border-top: 1px solid var(--line); }
-.report-guide span { padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--muted); font: 700 10px/1 var(--display); letter-spacing: .08em; }
-.report-guide b { margin-left: 18px; color: var(--ink); font: 600 13px/1 var(--body); letter-spacing: 0; }
 
 .form-card { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); }
 .form-card-heading { padding: 30px 34px; display: flex; justify-content: space-between; align-items: end; border-bottom: 1px solid var(--line); }
@@ -396,7 +393,6 @@ i { font-style: normal; }
   .submit-shell { grid-template-columns: 1fr; }
   .submit-intro { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: end; }
   .submit-intro > p { grid-column: 1; }
-  .report-guide { grid-column: 2; grid-row: 1 / span 3; }
 }
 
 @media (max-width: 640px) {
@@ -468,7 +464,6 @@ i { font-style: normal; }
   .fix-panel { margin-left: -16px; margin-right: -16px; padding: 24px 16px 38px; }
   .submit-intro { display: block; }
   .submit-intro > p:not(.eyebrow) { margin: 18px 0 22px; }
-  .report-guide { margin-top: 20px; }
   .form-card-heading, .form-section, .form-actions { padding-left: 14px; padding-right: 14px; }
   .form-card-heading { padding-top: 20px; padding-bottom: 20px; }
   .form-card-heading h2 { font-size: 23px; }
