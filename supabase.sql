@@ -71,7 +71,7 @@ with check (
   and fix_plan = ''
   and assignee = ''
   and resolved_at is null
-  and cardinality(attachment_urls) <= 3
+  and cardinality(attachment_urls) <= 8
 );
 
 drop policy if exists "internal update bugs" on public.bugs;
@@ -113,7 +113,7 @@ values (
   'bug-attachments',
   'bug-attachments',
   true,
-  5242880,
+  10485760,
   array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif']
 )
 on conflict (id) do update set

@@ -45,8 +45,8 @@
 
   function acceptFiles(files) {
     var incoming = Array.from(files);
-    if (selectedFiles.length + incoming.length > 3) {
-      showToast('最多只能上传 3 张图片。', 'error');
+    if (selectedFiles.length + incoming.length > 8) {
+      showToast('最多只能上传 8 张图片。', 'error');
       return;
     }
     var invalid = incoming.find(function (file) {
@@ -56,9 +56,9 @@
       showToast(invalid.name + ' 不是支持的图片格式。', 'error');
       return;
     }
-    var oversized = incoming.find(function (file) { return file.size > 5 * 1024 * 1024; });
+    var oversized = incoming.find(function (file) { return file.size > 10 * 1024 * 1024; });
     if (oversized) {
-      showToast(oversized.name + ' 超过 5 MB 限制。', 'error');
+      showToast(oversized.name + ' 超过 10 MB 限制。', 'error');
       return;
     }
     selectedFiles = selectedFiles.concat(incoming);

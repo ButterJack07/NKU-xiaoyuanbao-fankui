@@ -52,7 +52,7 @@ supabase.sql
 - 开启 Row Level Security（RLS）。
 - 创建 Bug 查询、提交和更新策略。
 - 创建公开图片桶 `bug-attachments`。
-- 限制单张图片最大为 5 MB。
+- 限制单张图片最大为 10 MB。
 - 创建图片上传和读取策略。
 
 脚本使用了 `if not exists` 和 `drop policy if exists`，因此在调整策略后可以重新执行。
@@ -131,9 +131,9 @@ bug-attachments
 
 - Bucket 为公开读取。
 - 匿名用户可以上传图片。
-- 单张图片最大 5 MB。
+- 单张图片最大 10 MB。
 - 仅支持 PNG、JPEG、GIF、WebP、BMP 和 AVIF 图片。
-- 网站 A 最多允许每条 Bug 选择 3 张图片。
+- 网站 A 最多允许每条 Bug 选择 8 张图片。
 
 如果 Storage 中没有该 Bucket，通常表示 `supabase.sql` 没有完整执行。重新执行脚本并检查 SQL Editor 返回的错误。
 
@@ -260,7 +260,7 @@ python -m http.server 8090
 
 1. 打开 `submit.html`。
 2. 填写所有必填项。
-3. 可选择一张小于 5 MB 的受支持图片。
+3. 可选择一张小于 10 MB 的受支持图片。
 4. 点击“提交 Bug 反馈”。
 5. 页面应显示提交成功和 Bug 编号。
 6. 返回 Supabase **Table Editor**。
@@ -347,7 +347,7 @@ Content-Type: application/json
 - 初始修复计划必须为空。
 - 初始负责人必须为空。
 - 初始解决时间必须为空。
-- 图片地址不能超过 3 个。
+- 图片地址不能超过 8 个。
 
 这可以阻止提交端直接创建伪造的“已解决”记录，但当前仍属于匿名内部访问方案。
 
@@ -411,7 +411,7 @@ your-anon-or-publishable-key
 检查：
 
 - Storage 中是否存在 `bug-attachments`。
-- 图片是否超过 5 MB。
+- 图片是否超过 10 MB。
 - 图片格式是否为 PNG、JPEG、GIF、WebP、BMP 或 AVIF。
 - `storage.objects` 是否存在上传策略。
 - Bucket 是否配置为 Public。

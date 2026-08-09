@@ -31,14 +31,6 @@
   </header>
 
   <main class="dashboard-shell">
-    <section class="dashboard-hero reveal">
-      <div>
-        <p class="eyebrow">DEVELOPMENT PULSE / 实时同步</p>
-        <h1>问题清晰，<br><em>修复有序。</em></h1>
-      </div>
-      <p class="hero-note">集中查看团队反馈，明确负责人和修复计划，关闭每一个影响体验的问题。</p>
-    </section>
-
     <div id="configNotice" class="notice hidden" role="status"></div>
 
     <section id="myTasksPanel" class="my-tasks-panel reveal delay-1">
@@ -221,6 +213,11 @@
   </div>
 
   <datalist id="departmentSuggestions"></datalist>
+
+  <nav class="mobile-bottom-nav" aria-label="移动端页面切换">
+    <a class="active" href="index.html"><span>▦</span><strong>修复看板</strong></a>
+    <a href="submit.html"><span>＋</span><strong>提交 Bug</strong></a>
+  </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
