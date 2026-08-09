@@ -1,0 +1,6 @@
+# Local credentials and environment files
+*password*.txt
+*.password.txt
+.env
+.env.*
+!.env.example
