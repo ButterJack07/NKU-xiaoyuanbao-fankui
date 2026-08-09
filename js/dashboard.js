@@ -111,7 +111,9 @@
   function myTaskRows() {
     if (!currentDeveloper) return [];
     return bugs.filter(function (bug) {
-      return bug.status !== 'resolved' && bug.assignee_id === currentDeveloper.id;
+      var assignedToMe = bug.assignee_id === currentDeveloper.id;
+      var assignedToMyDepartment = !bug.assignee_id && bug.assignee_department === currentDeveloper.department;
+      return bug.status !== 'resolved' && (assignedToMe || assignedToMyDepartment);
     });
   }
 
@@ -216,7 +218,7 @@
           '<p>' + escapeHtml(bug.description) + '</p>' +
           '<div class="bug-tags"><span class="tag severity-' + escapeHtml(bug.severity) + '">' + escapeHtml(labels.severity[bug.severity] || bug.severity) + '</span><span class="tag priority-tag">' + escapeHtml(labels.priority[bug.priority] || bug.priority) + '</span></div>' +
         '</div>' +
-        '<div class="bug-owner"><span>' + (bug.assignee ? escapeHtml(bug.assignee.slice(0, 1).toUpperCase()) : (bug.assignee_department ? '部' : '?')) + '</span><div><small>' + escapeHtml(bug.assignee_department || '负责人') + '</small><strong>' + escapeHtml(bug.assignee || (bug.assignee_department ? '部门待认领' : '待分配')) + '</strong></div></div>' +
+        '<div class="bug-owner"><span>' + (bug.assignee ? escapeHtml(bug.assignee.slice(0, 1).toUpperCase()) : (bug.assignee_department ? '部' : '?')) + '</span><div><small>' + escapeHtml(bug.assignee_department || '负责人') + '</small><strong>' + escapeHtml(bug.assignee || (bug.assignee_department ? '分配给部门' : '待分配')) + '</strong></div></div>' +
         '<div class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status] || bug.status) + '</div>' +
         '<span class="row-arrow">→</span>';
       article.addEventListener('click', function () { openDrawer(bug.id); });
@@ -273,7 +275,7 @@
     var matching = developers.filter(function (developer) {
       return !department || developer.department === department;
     });
-    var options = '<option value="">' + (department ? '部门统一负责 / 待认领' : '暂不指定人员') + '</option>';
+    var options = '<option value="">' + (department ? '直接分配给该部门' : '暂不指定人员') + '</option>';
     options += matching.map(function (developer) {
       return '<option value="' + escapeHtml(developer.id) + '" ' + (developer.id === selectedId ? 'selected' : '') + '>' + escapeHtml(developer.name) + (department ? '' : ' · ' + escapeHtml(developer.department)) + '</option>';
     }).join('');
@@ -300,7 +302,7 @@
       if (departmentSelect.value !== developer.department) departmentSelect.value = developer.department;
       hint.textContent = '将分配给 ' + developer.department + ' 的 ' + developer.name + (developer.role ? '（' + developer.role + '）' : '') + '。';
     } else if (departmentSelect.value) {
-      hint.textContent = '将分配给 ' + departmentSelect.value + '，由部门内部认领。';
+      hint.textContent = '将直接分配给 ' + departmentSelect.value + '，该部门每位成员都能在“分配给我的任务”中看到。';
     } else {
       hint.textContent = '当前任务尚未分配。';
     }
