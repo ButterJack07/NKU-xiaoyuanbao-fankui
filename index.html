@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="开发组内部 Bug 反馈与修复看板">
-  <title>校园宝 Bug 反馈平台 · 修复看板</title>
+  <title>校园宝 Bug 反馈平台 · 查看看板</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,8 +18,8 @@
       <span><strong>校园宝</strong><small>BUG 反馈平台</small></span>
     </a>
     <nav class="topnav" aria-label="主导航">
-      <a class="active" href="index.html">修复看板</a>
-      <a href="submit.html">提交 Bug</a>
+      <a class="active" href="index.html">查看看板</a>
+      <a href="submit.html">反馈问题</a>
     </nav>
     <div class="top-actions">
       <button id="openLoginModal" class="identity-button" type="button">
@@ -158,6 +158,15 @@
         </div>
         <button id="closeLoginModal" class="icon-button" type="button" aria-label="关闭登录窗口">×</button>
       </div>
+      <div class="login-filters">
+        <label class="search-field login-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="loginSearchInput" type="search" placeholder="搜索姓名…" autocomplete="off">
+        </label>
+        <select id="loginDepartmentFilter" class="select-control" aria-label="按部门筛选">
+          <option value="all">全部部门</option>
+        </select>
+      </div>
       <div id="loginDeveloperList" class="login-developer-list"></div>
       <div id="loginEmpty" class="login-empty hidden">
         <p>目前没有已登记的开发人员，请先完成登记。</p>
@@ -204,8 +213,8 @@
   <datalist id="departmentSuggestions"></datalist>
 
   <nav class="mobile-bottom-nav" aria-label="移动端页面切换">
-    <a class="active" href="index.html"><span>▦</span><strong>修复看板</strong></a>
-    <a href="submit.html"><span>＋</span><strong>提交 Bug</strong></a>
+    <a class="active" href="index.html"><span>▦</span><strong>查看看板</strong></a>
+    <a href="submit.html"><span>＋</span><strong>反馈问题</strong></a>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

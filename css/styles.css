@@ -333,6 +333,10 @@ i { font-style: normal; }
 .modal-actions { margin-top: 26px; display: flex; justify-content: center; gap: 10px; }
 .developer-modal { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--ink); background: var(--surface); box-shadow: 10px 10px 0 var(--acid); }
 .login-modal { width: min(650px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--ink); background: var(--surface); box-shadow: 10px 10px 0 var(--acid); }
+.login-filters { padding: 18px 30px 0; display: flex; align-items: center; gap: 12px; }
+.login-filters .login-search { min-width: 0; flex: 1; }
+.login-filters .select-control { flex: none; width: 150px; }
+.login-filter-empty { grid-column: 1 / -1; padding: 24px 20px; text-align: center; color: var(--muted); font-size: 12px; border: 1px dashed var(--line); background: white; }
 .login-developer-list { padding: 22px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .login-developer-card { min-width: 0; padding: 12px; display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 11px; border: 1px solid var(--line); background: white; cursor: pointer; text-align: left; }
 .login-developer-card:hover, .login-developer-card.is-current { border-color: var(--ink); box-shadow: 3px 3px 0 var(--acid); }
@@ -483,6 +487,8 @@ i { font-style: normal; }
   .developer-modal, .login-modal { width: 100%; max-height: calc(100vh - 12px); align-self: end; box-shadow: none; }
   .developer-modal-header, .developer-form, .directory-heading, .developer-list { padding-left: 18px; padding-right: 18px; }
   .developer-list { grid-template-columns: 1fr; }
+  .login-filters { padding-left: 18px; padding-right: 18px; }
+  .login-filters .select-control { width: 120px; }
   .login-developer-list { padding-left: 18px; padding-right: 18px; grid-template-columns: 1fr; }
   .logout-area { align-items: stretch; flex-direction: column; padding-left: 18px; padding-right: 18px; }
   .assignment-heading { align-items: flex-start; flex-direction: column; gap: 5px; }

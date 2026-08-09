@@ -156,10 +156,20 @@
     } else {
       empty.classList.add('hidden');
       list.classList.remove('hidden');
-      list.innerHTML = developers.map(function (developer) {
+      var selectedDepartment = document.getElementById('loginDepartmentFilter').value;
+      var query = document.getElementById('loginSearchInput').value.trim().toLowerCase();
+      var rows = developers.filter(function (developer) {
+        var matchesDepartment = selectedDepartment === 'all' || developer.department === selectedDepartment;
+        var matchesQuery = !query || developer.name.toLowerCase().includes(query);
+        return matchesDepartment && matchesQuery;
+      });
+      list.innerHTML = rows.map(function (developer) {
         var isCurrent = currentDeveloper && currentDeveloper.id === developer.id;
         return '<button class="login-developer-card ' + (isCurrent ? 'is-current' : '') + '" type="button" data-developer-id="' + escapeHtml(developer.id) + '"><span class="developer-avatar">' + escapeHtml(developer.name.slice(0, 1)) + '</span><span><strong>' + escapeHtml(developer.name) + '</strong><small>' + escapeHtml(developer.department) + '</small></span><b>' + (isCurrent ? '当前身份 ✓' : '登录 →') + '</b></button>';
       }).join('');
+      if (!rows.length) {
+        list.innerHTML = '<div class="login-filter-empty">没有符合条件的人员</div>';
+      }
       list.querySelectorAll('.login-developer-card').forEach(function (button) {
         button.addEventListener('click', function () {
           var developer = developers.find(function (item) { return item.id === button.dataset.developerId; });
@@ -170,10 +180,21 @@
     logoutArea.classList.toggle('hidden', !currentDeveloper);
   }
 
+  function renderLoginFilters() {
+    var select = document.getElementById('loginDepartmentFilter');
+    var current = select.value;
+    var departments = uniqueDepartments();
+    select.innerHTML = '<option value="all">全部部门</option>' + departments.map(function (department) {
+      return '<option value="' + escapeHtml(department) + '">' + escapeHtml(department) + '</option>';
+    }).join('');
+    if (departments.indexOf(current) === -1) select.value = 'all';
+  }
+
   function renderDeveloperDirectory() {
     var list = document.getElementById('developerList');
     var suggestions = document.getElementById('departmentSuggestions');
     document.getElementById('developerCount').textContent = developers.length + ' 人';
+    renderLoginFilters();
     suggestions.innerHTML = uniqueDepartments().map(function (department) {
       return '<option value="' + escapeHtml(department) + '"></option>';
     }).join('');
@@ -556,6 +577,8 @@
   });
   document.getElementById('searchInput').addEventListener('input', renderList);
   document.getElementById('importanceFilter').addEventListener('change', renderList);
+  document.getElementById('loginSearchInput').addEventListener('input', renderLoginDirectory);
+  document.getElementById('loginDepartmentFilter').addEventListener('change', renderLoginDirectory);
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);
