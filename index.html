@@ -26,7 +26,6 @@
         <span id="identityAvatar">?</span>
         <span><small id="identityLabel">开发人员</small><strong id="identityName">选择登录</strong></span>
       </button>
-      <button id="openDeveloperModal" class="button button-ghost button-small" type="button">登记开发人员</button>
     </div>
   </header>
 
@@ -170,11 +169,13 @@
       <div id="loginDeveloperList" class="login-developer-list"></div>
       <div id="loginEmpty" class="login-empty hidden">
         <p>目前没有已登记的开发人员，请先完成登记。</p>
-        <button id="registerFromLogin" class="button button-primary" type="button">登记开发人员 →</button>
       </div>
       <div id="logoutArea" class="logout-area hidden">
         <span>当前浏览器已保存登录身份。</span>
         <button id="logoutButton" class="button button-ghost button-small" type="button">退出当前身份</button>
+      </div>
+      <div class="login-register">
+        <button id="registerFromLogin" class="button button-ghost button-full" type="button">登记开发人员 →</button>
       </div>
     </section>
   </div>

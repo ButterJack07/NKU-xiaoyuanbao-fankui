@@ -348,6 +348,7 @@ i { font-style: normal; }
 .login-empty { padding: 34px 30px; text-align: center; }
 .login-empty p { color: var(--muted); font-size: 12px; }
 .logout-area { padding: 15px 30px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 20px; background: #e9e7dd; }
+.login-register { padding: 16px 30px; border-top: 1px solid var(--line); background: #e9e7dd; }
 .logout-area span { color: var(--muted); font-size: 10px; }
 .developer-modal-header { padding: 28px 30px 23px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--line); }
 .developer-modal-header h2 { margin: 0 0 9px; font: 700 28px/1 var(--display); letter-spacing: -.03em; }
@@ -491,6 +492,7 @@ i { font-style: normal; }
   .login-filters .select-control { width: 120px; }
   .login-developer-list { padding-left: 18px; padding-right: 18px; grid-template-columns: 1fr; }
   .logout-area { align-items: stretch; flex-direction: column; padding-left: 18px; padding-right: 18px; }
+  .login-register { padding-left: 18px; padding-right: 18px; }
   .assignment-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
 }
 

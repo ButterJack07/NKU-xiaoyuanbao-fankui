@@ -596,7 +596,6 @@
   document.getElementById('imagePreviewModal').addEventListener('click', function (event) {
     if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
   });
-  document.getElementById('openDeveloperModal').addEventListener('click', openDeveloperModal);
   document.getElementById('openLoginModal').addEventListener('click', openLoginModal);
   document.getElementById('loginFromTasks').addEventListener('click', openLoginModal);
   document.getElementById('closeLoginModal').addEventListener('click', closeLoginModal);
