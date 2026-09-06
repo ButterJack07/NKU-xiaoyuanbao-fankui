@@ -42,7 +42,12 @@
       '产品': '仅显示归属于产品部门的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。'
     };
     if (description) description.textContent = descriptions[departmentFromUrl] || '仅显示归属于' + departmentFromUrl + '部门的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。';
-    if (departmentSelect) { departmentSelect.value = departmentFromUrl; departmentSelect.disabled = true; departmentSelect.setAttribute('aria-label', '当前部门'); }
+    if (departmentSelect) {
+      departmentSelect.value = departmentFromUrl;
+      departmentSelect.disabled = true;
+      departmentSelect.classList.add('hidden');
+      departmentSelect.setAttribute('aria-label', '当前部门');
+    }
     document.title = '校缘宝内测管理网站 · ' + departmentFromUrl + '缺陷列表';
   }
   async function load() { try { rows = await window.PatchworkAPI.listBugs(); render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
