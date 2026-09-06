@@ -1,0 +1,11 @@
+name = "xiaoyuanbao-supabase-keepalive"
+main = "src/index.js"
+compatibility_date = "2026-09-06"
+
+[triggers]
+crons = ["0 */12 * * *"]
+
+[vars]
+# Set the real values in Cloudflare Dashboard or with wrangler secret.
+# SUPABASE_URL = "https://your-project.supabase.co"
+# SUPABASE_ANON_KEY = "your-publishable-or-anon-key"

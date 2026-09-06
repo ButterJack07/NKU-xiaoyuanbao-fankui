@@ -1,6 +1,20 @@
 -- 在 Supabase SQL Editor 中执行本文件。
 create extension if not exists pgcrypto;
 
+-- Read-only health endpoint for an external scheduled keepalive.
+create table if not exists public.healthcheck (
+  id integer primary key,
+  checked_at timestamptz not null default now()
+);
+
+insert into public.healthcheck (id) values (1)
+on conflict (id) do nothing;
+
+alter table public.healthcheck enable row level security;
+drop policy if exists "public healthcheck read" on public.healthcheck;
+create policy "public healthcheck read"
+on public.healthcheck for select to anon, authenticated using (true);
+
 -- Team identity and role model. Create matching auth.users accounts in Supabase Auth.
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
