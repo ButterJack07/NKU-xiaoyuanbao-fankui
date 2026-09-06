@@ -2,11 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (request.method === 'OPTIONS') return new Response('ok', { status: 200, headers: cors });
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) throw new Error('缺少登录凭据。');

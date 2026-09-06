@@ -28,6 +28,7 @@
     error.classList.add('hidden'); button.disabled = true; button.textContent = '正在创建…';
     try {
       var payload = Object.fromEntries(new FormData(form).entries());
+      if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('账号只能使用 3-40 位字母、数字、下划线或短横线。');
       await window.PatchworkAPI.createTeamUser(payload);
       toast('普通用户创建成功。', 'success'); form.reset(); modal.classList.add('hidden'); await load();
     } catch (err) { error.textContent = err.message || '创建失败，请检查 Edge Function 是否已部署。'; error.classList.remove('hidden'); }
