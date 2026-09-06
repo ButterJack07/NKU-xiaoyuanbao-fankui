@@ -14,6 +14,7 @@ create table if not exists public.profiles (
   wechat text not null default '',
   phone text not null default '',
   contact_time text not null default '',
+  contact_schedule jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

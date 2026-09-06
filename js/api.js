@@ -121,7 +121,15 @@
   }
 
   async function listProfiles() {
-    return request('/rest/v1/profiles?select=id,username,full_name,department,role,active&active=eq.true', { method: 'GET', headers: headers() });
+    return request('/rest/v1/profiles?select=id,username,full_name,department,role,active,qq,wechat,phone,contact_time&active=eq.true', { method: 'GET', headers: headers() });
+  }
+
+  async function listAnnouncements() {
+    return request('/rest/v1/announcements?select=*&order=created_at.desc', { method: 'GET', headers: headers() });
+  }
+
+  async function createAnnouncement(payload) {
+    return request('/rest/v1/announcements', { method: 'POST', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(payload) });
   }
 
   async function createTestCase(payload) {
@@ -197,6 +205,8 @@
     resetTeamUserPassword: resetTeamUserPassword,
     updateProfile: updateProfile
     ,listProfiles: listProfiles,
-    downloadFile: downloadFile
+    downloadFile: downloadFile,
+    listAnnouncements: listAnnouncements,
+    createAnnouncement: createAnnouncement
   };
 })();

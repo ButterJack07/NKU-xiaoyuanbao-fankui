@@ -2,11 +2,13 @@ alter table public.profiles add column if not exists qq text not null default ''
 alter table public.profiles add column if not exists wechat text not null default '';
 alter table public.profiles add column if not exists phone text not null default '';
 alter table public.profiles add column if not exists contact_time text not null default '';
+alter table public.profiles add column if not exists contact_schedule jsonb not null default '{}'::jsonb;
 create or replace function public.update_my_contact_profile(
   p_qq text default '',
   p_wechat text default '',
   p_phone text default '',
-  p_contact_time text default ''
+  p_contact_time text default '',
+  p_contact_schedule jsonb default '{}'::jsonb
 )
 returns public.profiles
 language plpgsql
@@ -20,6 +22,7 @@ begin
       wechat = coalesce(p_wechat, ''),
       phone = coalesce(p_phone, ''),
       contact_time = coalesce(p_contact_time, ''),
+      contact_schedule = coalesce(p_contact_schedule, '{}'::jsonb),
       updated_at = now()
   where id = auth.uid() and active = true
   returning * into updated_profile;
