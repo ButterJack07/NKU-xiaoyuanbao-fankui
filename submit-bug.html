@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>校缘宝内测管理网站 · 新建软件缺陷报告</title><link rel="stylesheet" href="css/styles.css"></head>
+<body class="submit-page"><div class="noise" aria-hidden="true"></div><header class="topbar"></header>
+<main class="submit-shell bug-submit-shell">
+  <div class="workspace-breadcrumb"><a href="index.html">测试</a><b>/</b><a href="bug-reports.html">软件缺陷报告</a><b>/</b><strong>新建软件缺陷报告</strong></div>
+  <section class="cases-title bug-submit-title"><p class="eyebrow">TEST GROUP / NEW REPORT</p><h1>新建软件缺陷报告</h1><p>提交时必须选择技术—前端、技术—后端、设计或产品；系统将自动生成 BUG 编号并分发。</p></section>
+  <section class="form-card bug-submit-card"><div class="form-card-heading"><div><p class="eyebrow">BUG REPORT FORM</p><h2>缺陷报告内容</h2></div><span class="required-note"><i>*</i> 为必填项</span></div><div id="configNotice" class="notice hidden"></div>
+    <form id="bugForm">
+      <input type="hidden" name="reporter" id="reporterField">
+      <label class="field field-full"><span>问题标题 <i>*</i></span><input name="title" required maxlength="120" placeholder="例如：发帖按钮位置错误"></label>
+      <label class="field field-full"><span>发现模块/功能 <i>*</i></span><input name="module" required maxlength="60" placeholder="例如：发帖"></label>
+      <label class="field field-full"><span>问题描述 <i>*</i></span><textarea name="description" required maxlength="3000" rows="5" placeholder="请描述发现的问题。"></textarea></label>
+      <label class="field field-full"><span>操作步骤 <i>*</i></span><textarea name="repro_steps" required maxlength="3000" rows="5" placeholder="请按步骤说明如何复现。"></textarea></label>
+      <label class="field field-full"><span>预期结果 <i>*</i></span><input name="expected_result" required maxlength="1500" placeholder="期望出现的结果。"></label>
+      <label class="field field-full"><span>实际结果 <i>*</i></span><input name="actual_result" required maxlength="1500" placeholder="实际出现的结果。"></label>
+      <div class="field-row"><label class="field"><span>严重程度 <i>*</i></span><select name="importance" required><option value="">请选择严重程度</option><option value="heavy">严重</option><option value="medium">一般</option><option value="light">轻微</option></select></label><label class="field"><span>归属部门 <i>*</i></span><select name="assignee_department" required><option value="">请选择归属部门</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option></select></label></div>
+      <label class="field field-full"><span>附件 <i>*</i></span><label id="dropzone" class="upload-zone"><input id="attachments" name="attachments" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" multiple><span class="upload-icon">↑</span><strong>上传截图、录屏或文件</strong><small>支持图片、录屏、PDF、Word 和 Excel 文件</small></label><div id="fileList" class="file-list"></div></label>
+      <div class="form-actions"><button id="submitButton" class="button button-primary" type="submit"><span>提交缺陷报告</span></button></div><p class="bug-submit-note">提交后系统生成 BUG 编号并自动分发。<br>部门说明：前端—页面交互；后端—数据服务；设计—视觉资源；产品—需求流程。</p>
+    </form>
+  </section>
+</main>
+<div id="successModal" class="modal-backdrop hidden"><div class="success-modal"><span class="success-mark">✓</span><p class="eyebrow">REPORT RECEIVED</p><h2>缺陷报告已提交</h2><p>问题编号 <strong id="successCode"></strong>，系统已自动分发。</p><div class="modal-actions"><button id="submitAnother" class="button button-ghost" type="button">继续提交</button><a class="button button-primary" href="bug-reports.html">查看缺陷列表</a></div></div></div><div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/workspace-nav.js"></script><script src="js/api.js"></script><script src="js/submit.js"></script>
+</body></html>

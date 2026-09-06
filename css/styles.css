@@ -21,6 +21,9 @@
   --peach-wash: #fff0e6;
 }
 
+/* Hide decorative English eyebrow labels; Chinese page titles remain visible. */
+.eyebrow { display: none !important; }
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -140,7 +143,18 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .workspace-date { margin-left: auto; color: #adb3ae; }
 .department-workspace.hidden { display: none !important; }
 .legacy-department-board { display: none !important; }
+.department-workspace:not(.department-table-panel) { display: none !important; }
 .department-table-panel { margin-top: 18px; }
+.department-case-shell { margin-top: 0; }
+.department-case-shell.hidden { display: none !important; }
+.department-case-shell > .cases-topbar { display: none; }
+.workspace-heading.hidden { display: none !important; }
+.department-case-table-card { min-height: 420px; }
+.department-cases-table { table-layout: fixed; }
+.department-cases-table th, .department-cases-table td { padding: 17px 14px; }
+.department-table-panel { display: block; }
+.department-table-panel .department-table-toolbar { max-width: 100%; }
+.department-table-panel .department-table-card { min-height: 420px; }
 .department-table-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .department-search { min-width: 280px; height: 44px; }
 .department-select { height: 44px; min-width: 160px; padding: 0 13px; border: 1px solid #171717; border-radius: 9px; color: #171717; background: #fff; font-size: 13px; outline: none; }
@@ -191,6 +205,23 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .cases-title { padding: 42px 0 30px; }
 .cases-title h1 { margin: 0 0 12px; color: #19212b; font: 700 42px/1.15 var(--body); letter-spacing: -.05em; }
 .cases-title p:not(.eyebrow) { margin: 0; color: #969d99; font-size: 13px; }
+.bug-reports-shell .cases-title { padding-bottom: 24px; }
+.bug-report-actions { align-items: center; }
+.bug-report-actions .cases-search { flex: 1 1 320px; }
+.bug-report-table-card { min-height: 420px; }
+.bug-submit-shell { max-width: 920px; }
+.bug-submit-title { padding-bottom: 28px; }
+.bug-submit-card { width: 100%; padding: 32px; border: 1px solid #171717; border-radius: 18px; background: #fff; }
+.bug-submit-card .field { margin-bottom: 20px; }
+.bug-submit-card .field > span { display: block; margin-bottom: 9px; color: #171717; font-size: 13px; font-weight: 600; }
+.bug-submit-card .field > span i { color: #ed5a52; font-style: normal; }
+.bug-submit-card input, .bug-submit-card textarea, .bug-submit-card select { width: 100%; border: 1px solid #171717; border-radius: 9px; background: #fff; }
+.bug-submit-card input, .bug-submit-card select { height: 46px; padding: 0 13px; }
+.bug-submit-card textarea { min-height: 110px; padding: 12px 13px; resize: vertical; }
+.bug-submit-card input::placeholder, .bug-submit-card textarea::placeholder { color: #aaa; }
+.bug-submit-card .upload-zone { min-height: 150px; }
+.bug-submit-note { margin: 20px 0 0; color: #999; font-size: 11px; line-height: 1.8; }
+@media (max-width: 700px) { .bug-submit-card { padding: 24px 18px; } }
 .cases-actions { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
 .cases-search { height: 44px; min-width: 300px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border: 1px solid #171717; border-radius: 9px; background: #fff; }
 .cases-search span { color: #777; font-size: 20px; }

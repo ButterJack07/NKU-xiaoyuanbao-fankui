@@ -9,6 +9,10 @@
   var successModal = document.getElementById('successModal');
   var selectedFiles = [];
 
+  if (!form || !fileInput || !fileList || !submitButton) return;
+  var reporterField = document.getElementById('reporterField');
+  if (reporterField && window.PATCHWORK_PROFILE) reporterField.value = window.PATCHWORK_PROFILE.full_name || window.PATCHWORK_PROFILE.username || '';
+
   if (!window.PatchworkAPI.isConfigured()) {
     configNotice.textContent = '数据库尚未连接。请先按照 README.md 配置 js/config.js 并执行 supabase.sql。';
     configNotice.classList.remove('hidden');

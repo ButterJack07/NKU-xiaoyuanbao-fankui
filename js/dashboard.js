@@ -42,16 +42,17 @@
 
   function showToast(message, type) {
     var toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = message;
     toast.className = 'toast show ' + (type || '');
     window.setTimeout(function () { toast.className = 'toast'; }, 3800);
   }
 
   function updateStats() {
-    document.getElementById('statTotal').textContent = bugs.length;
-    document.getElementById('statOpen').textContent = bugs.filter(function (bug) { return bug.status === 'open'; }).length;
-    document.getElementById('statProgress').textContent = bugs.filter(function (bug) { return bug.status === 'in_progress'; }).length;
-    document.getElementById('statResolved').textContent = bugs.filter(function (bug) { return bug.status === 'resolved'; }).length;
+    var statTotal = document.getElementById('statTotal'); if (statTotal) statTotal.textContent = bugs.length;
+    var statOpen = document.getElementById('statOpen'); if (statOpen) statOpen.textContent = bugs.filter(function (bug) { return bug.status === 'open'; }).length;
+    var statProgress = document.getElementById('statProgress'); if (statProgress) statProgress.textContent = bugs.filter(function (bug) { return bug.status === 'in_progress'; }).length;
+    var statResolved = document.getElementById('statResolved'); if (statResolved) statResolved.textContent = bugs.filter(function (bug) { return bug.status === 'resolved'; }).length;
     renderMyTasks();
   }
 
@@ -106,6 +107,7 @@
     var avatar = document.getElementById('identityAvatar');
     var label = document.getElementById('identityLabel');
     var name = document.getElementById('identityName');
+    if (!avatar || !label || !name) return;
     if (currentProfile) {
       avatar.textContent = (currentProfile.full_name || currentProfile.username).slice(0, 1);
       label.textContent = currentProfile.role === 'admin' ? '超级管理员' : currentProfile.department;
@@ -147,6 +149,7 @@
     var emptyState = document.getElementById('myTasksEmpty');
     var list = document.getElementById('myTasksList');
     var identity = document.getElementById('myTasksIdentity');
+    if (!loginState || !emptyState || !list || !identity) return;
     if (!currentProfile && !currentDeveloper) {
       identity.textContent = '登录后查看个人任务';
       loginState.classList.remove('hidden');
@@ -174,6 +177,7 @@
     var list = document.getElementById('loginDeveloperList');
     var empty = document.getElementById('loginEmpty');
     var logoutArea = document.getElementById('logoutArea');
+    if (!list || !empty || !logoutArea) return;
     var registerButton = document.getElementById('registerFromLogin');
     if (registerButton) registerButton.closest('.login-register').classList.toggle('hidden', !currentProfile || currentProfile.role !== 'admin');
     if (!developers.length) {
@@ -209,6 +213,7 @@
 
   function renderLoginFilters() {
     var select = document.getElementById('loginDepartmentFilter');
+    if (!select) return;
     var current = select.value;
     var departments = uniqueDepartments();
     select.innerHTML = '<option value="all">全部部门</option>' + departments.map(function (department) {
@@ -220,7 +225,9 @@
   function renderDeveloperDirectory() {
     var list = document.getElementById('developerList');
     var suggestions = document.getElementById('departmentSuggestions');
-    document.getElementById('developerCount').textContent = developers.length + ' 人';
+    var count = document.getElementById('developerCount');
+    if (!list || !suggestions || !count) return;
+    count.textContent = developers.length + ' 人';
     renderLoginFilters();
     suggestions.innerHTML = uniqueDepartments().map(function (department) {
       return '<option value="' + escapeHtml(department) + '"></option>';
@@ -256,7 +263,8 @@
 
   function updateWorkspaceView() {
     var isDepartmentView = Boolean(departmentFromUrl);
-    document.querySelectorAll('.department-workspace').forEach(function (node) { node.classList.toggle('hidden', !isDepartmentView); });
+    document.querySelectorAll('.department-workspace:not(.department-table-panel)').forEach(function (node) { node.classList.add('hidden'); });
+    document.querySelectorAll('.department-table-panel').forEach(function (node) { node.classList.toggle('hidden', !isDepartmentView); });
     var title = document.getElementById('workspaceTitle');
     var description = document.getElementById('workspaceDescription');
     var eyebrow = document.getElementById('workspaceEyebrow');
@@ -264,8 +272,14 @@
     var breadcrumb = document.getElementById('workspaceBreadcrumb');
     var breadcrumbWrap = document.getElementById('workspaceBreadcrumbWrap');
     var listTitle = document.getElementById('departmentListTitle');
+    var testGroupServices = document.getElementById('testGroupServices');
+    var departmentCaseShell = document.getElementById('departmentCaseShell');
+    var workspaceHeading = document.getElementById('workspaceHeading');
     if (!title || !description) return;
     if (isDepartmentView) {
+      if (testGroupServices) testGroupServices.classList.add('hidden');
+      if (departmentCaseShell) departmentCaseShell.classList.remove('hidden');
+      if (workspaceHeading) workspaceHeading.classList.add('hidden');
       title.textContent = departmentFromUrl + '缺陷列表';
       var departmentDescriptions = {
         '技术—前端': '仅显示当前归属为技术—前端的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。',
@@ -277,9 +291,16 @@
       eyebrow.textContent = 'DEPARTMENT / BUG REGISTER';
       role.textContent = departmentFromUrl + '工作台';
       breadcrumb.textContent = departmentFromUrl + '缺陷列表';
-      if (breadcrumbWrap) breadcrumbWrap.classList.remove('hidden');
+      if (breadcrumbWrap) breadcrumbWrap.classList.add('hidden');
       if (listTitle) listTitle.textContent = departmentFromUrl + '缺陷列表';
+      var departmentCaseTitle = document.getElementById('departmentCaseTitle');
+      var departmentCaseDescription = document.getElementById('departmentCaseDescription');
+      if (departmentCaseTitle) departmentCaseTitle.textContent = departmentFromUrl + '缺陷列表';
+      if (departmentCaseDescription) departmentCaseDescription.textContent = departmentDescriptions[departmentFromUrl] || '仅显示当前归属为' + departmentFromUrl + '的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。';
     } else {
+      if (testGroupServices) testGroupServices.classList.remove('hidden');
+      if (departmentCaseShell) departmentCaseShell.classList.add('hidden');
+      if (workspaceHeading) workspaceHeading.classList.remove('hidden');
       title.textContent = '测试组首页';
       description.textContent = '测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。';
       eyebrow.textContent = 'TEST GROUP / WORKSPACE';
@@ -290,6 +311,30 @@
     }
   }
   updateWorkspaceView();
+  if (departmentFromUrl) {
+    document.querySelectorAll('.department-table-panel').forEach(function (node) { node.classList.remove('hidden'); });
+    document.querySelectorAll('.home-services').forEach(function (node) { node.classList.add('hidden'); });
+  }
+  function renderDepartmentCaseList() {
+    var list = document.getElementById('departmentCaseList');
+    var empty = document.getElementById('departmentCaseEmpty');
+    if (!list || !empty || !departmentFromUrl) return;
+    var query = (document.getElementById('departmentCaseSearch').value || '').trim().toLowerCase();
+    var status = document.getElementById('departmentCaseStatus').value;
+    var importance = document.getElementById('departmentCaseImportance').value;
+    var filtered = bugs.filter(function (bug) { return bug.assignee_department === departmentFromUrl && (status === 'all' || bug.status === status) && (importance === 'all' || bug.importance === importance) && (!query || String(bug.title || '').toLowerCase().includes(query)); });
+    list.innerHTML = filtered.map(function (bug) {
+      var mine = currentProfile && bug.assignee_id === currentProfile.id;
+      var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
+      var importanceLabel = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
+      return '<tr><td>BUG-' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</td><td class="case-file-name">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="case-download-link" href="mailto:">联系提交人</a></td><td class="' + (mine ? 'department-mine' : '') + '">' + escapeHtml(mine ? (bug.assignee || '—') + '（我的）' : (bug.assignee || '—')) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at, true)) + '</td><td><button class="case-download-link" type="button" data-department-case="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
+    }).join('');
+    empty.classList.toggle('hidden', filtered.length !== 0);
+  }
+  ['departmentCaseSearch', 'departmentCaseStatus', 'departmentCaseImportance'].forEach(function (id) { var node = document.getElementById(id); if (node) { node.addEventListener('input', renderDepartmentCaseList); node.addEventListener('change', renderDepartmentCaseList); } });
+  document.addEventListener('click', function (event) { var button = event.target.closest('[data-department-case]'); if (button) openDrawer(button.dataset.departmentCase); });
+  var departmentCaseExport = document.getElementById('departmentCaseExport');
+  if (departmentCaseExport) departmentCaseExport.addEventListener('click', function () { var rows = Array.from(document.querySelectorAll('#departmentCaseList tr')).map(function (row) { return Array.from(row.children).map(function (cell) { return cell.textContent.trim(); }); }); var csv = '\ufeff缺陷编号,问题标题,提交人,联系方式,当前跟进人,状态,严重程度,最后更新时间,操作\n' + rows.map(function (row) { return row.map(function (value) { return '"' + value.replace(/"/g, '""') + '"'; }).join(','); }).join('\n'); var link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'department-bugs.csv'; link.click(); });
   ['departmentSearch', 'departmentStatusFilter', 'departmentImportanceFilter'].forEach(function (id) { var node = document.getElementById(id); if (node) node.addEventListener('input', renderDepartmentTable); if (node) node.addEventListener('change', renderDepartmentTable); });
   document.addEventListener('click', function (event) { var button = event.target.closest('[data-department-bug]'); if (button) openDrawer(button.dataset.departmentBug); });
   var departmentExport = document.getElementById('exportDepartmentReport');
@@ -345,8 +390,8 @@
     table.innerHTML = rows.map(function (bug) {
       var currentName = bug.assignee || '—';
       var isMine = currentProfile && bug.assignee_id === currentProfile.id;
-      var importanceLabel = labels.importance[bug.importance] || bug.importance || '—';
-      var statusLabel = labels.status[bug.status] || bug.status || '—';
+      var importanceLabel = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
+      var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
       return '<tr><td>BUG-' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</td><td class="department-title-cell">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="department-link" href="mailto:">联系提交人</a></td><td class="' + (isMine ? 'department-mine' : '') + '">' + escapeHtml(isMine ? currentName + '（我的）' : currentName) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at)) + '</td><td><button class="department-link" type="button" data-department-bug="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
     }).join('');
     empty.classList.toggle('hidden', rows.length !== 0);
@@ -631,6 +676,7 @@
     currentProfile = window.PATCHWORK_PROFILE || null;
     renderIdentity();
     renderMyTasks();
+    renderDepartmentTable();
     return currentProfile;
   }
 
@@ -697,48 +743,48 @@
       renderList();
     });
   });
-  document.getElementById('searchInput').addEventListener('input', renderList);
-  document.getElementById('importanceFilter').addEventListener('change', renderList);
-  document.getElementById('departmentFilter').addEventListener('change', function (event) { currentDepartment = event.target.value; renderList(); });
-  document.getElementById('loginSearchInput').addEventListener('input', renderLoginDirectory);
-  document.getElementById('loginDepartmentFilter').addEventListener('change', renderLoginDirectory);
-  document.getElementById('refreshButton').addEventListener('click', loadBugs);
-  document.getElementById('exportBugs').addEventListener('click', function () {
+  var searchInput = document.getElementById('searchInput'); if (searchInput) searchInput.addEventListener('input', renderList);
+  var importanceFilter = document.getElementById('importanceFilter'); if (importanceFilter) importanceFilter.addEventListener('change', renderList);
+  var departmentFilterNode = document.getElementById('departmentFilter'); if (departmentFilterNode) departmentFilterNode.addEventListener('change', function (event) { currentDepartment = event.target.value; renderList(); });
+  var loginSearchInput = document.getElementById('loginSearchInput'); if (loginSearchInput) loginSearchInput.addEventListener('input', renderLoginDirectory);
+  var loginDepartmentFilter = document.getElementById('loginDepartmentFilter'); if (loginDepartmentFilter) loginDepartmentFilter.addEventListener('change', renderLoginDirectory);
+  var refreshButton = document.getElementById('refreshButton'); if (refreshButton) refreshButton.addEventListener('click', loadBugs);
+  var exportBugs = document.getElementById('exportBugs'); if (exportBugs) exportBugs.addEventListener('click', function () {
     var headers = ['编号', '标题', '反馈人', '模块', '部门', '负责人', '状态', '重要程度', '描述', '修复计划'];
     var csv = '\ufeff' + headers.join(',') + '\n' + filteredBugs().map(function (bug) { return [bug.id, bug.title, bug.reporter, bug.module, bug.assignee_department, bug.assignee, labels.status[bug.status], labels.importance[bug.importance], bug.description, bug.fix_plan].map(function (value) { return '"' + String(value || '').replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
     var link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'bug-reports.csv'; link.click();
   });
-  document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
-  document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);
-  document.getElementById('previousPreviewImage').addEventListener('click', function () { movePreview(-1); });
-  document.getElementById('nextPreviewImage').addEventListener('click', function () { movePreview(1); });
-  document.getElementById('imagePreviewContent').addEventListener('load', function (event) {
+  var closeDrawerButton = document.getElementById('closeDrawer'); if (closeDrawerButton) closeDrawerButton.addEventListener('click', closeDrawer);
+  var closeImageButton = document.getElementById('closeImagePreview'); if (closeImageButton) closeImageButton.addEventListener('click', closeImagePreview);
+  var previousPreview = document.getElementById('previousPreviewImage'); if (previousPreview) previousPreview.addEventListener('click', function () { movePreview(-1); });
+  var nextPreview = document.getElementById('nextPreviewImage'); if (nextPreview) nextPreview.addEventListener('click', function () { movePreview(1); });
+  var previewContent = document.getElementById('imagePreviewContent'); if (previewContent) previewContent.addEventListener('load', function (event) {
     event.currentTarget.classList.remove('is-loading');
     document.getElementById('imagePreviewLoading').classList.add('hidden');
   });
-  document.getElementById('imagePreviewContent').addEventListener('error', function (event) {
+  if (previewContent) previewContent.addEventListener('error', function (event) {
     event.currentTarget.classList.add('is-loading');
     document.getElementById('imagePreviewLoading').classList.add('hidden');
     document.getElementById('imagePreviewError').classList.remove('hidden');
   });
-  document.getElementById('imagePreviewModal').addEventListener('click', function (event) {
+  var imagePreviewModal = document.getElementById('imagePreviewModal'); if (imagePreviewModal) imagePreviewModal.addEventListener('click', function (event) {
     if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
   });
-  document.getElementById('openLoginModal').addEventListener('click', openLoginModal);
+  var openLoginButton = document.getElementById('openLoginModal'); if (openLoginButton) openLoginButton.addEventListener('click', openLoginModal);
   var topUserCard = document.getElementById('topUserCard');
   if (topUserCard) topUserCard.addEventListener('click', openLoginModal);
-  document.getElementById('loginFromTasks').addEventListener('click', openLoginModal);
-  document.getElementById('closeLoginModal').addEventListener('click', closeLoginModal);
-  document.getElementById('loginModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeLoginModal(); });
-  document.getElementById('logoutButton').addEventListener('click', logoutDeveloper);
-  document.getElementById('registerFromLogin').addEventListener('click', function () {
+  var loginFromTasks = document.getElementById('loginFromTasks'); if (loginFromTasks) loginFromTasks.addEventListener('click', openLoginModal);
+  var closeLoginButton = document.getElementById('closeLoginModal'); if (closeLoginButton) closeLoginButton.addEventListener('click', closeLoginModal);
+  var loginModal = document.getElementById('loginModal'); if (loginModal) loginModal.addEventListener('click', function (event) { if (event.target === event.currentTarget) closeLoginModal(); });
+  var logoutButton = document.getElementById('logoutButton'); if (logoutButton) logoutButton.addEventListener('click', logoutDeveloper);
+  var registerButton = document.getElementById('registerFromLogin'); if (registerButton) registerButton.addEventListener('click', function () {
     closeLoginModal();
     openDeveloperModal();
   });
-  document.getElementById('closeDeveloperModal').addEventListener('click', closeDeveloperModal);
-  document.getElementById('developerModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeDeveloperModal(); });
-  document.getElementById('developerForm').addEventListener('submit', saveDeveloper);
-  backdrop.addEventListener('click', closeDrawer);
+  var closeDeveloperButton = document.getElementById('closeDeveloperModal'); if (closeDeveloperButton) closeDeveloperButton.addEventListener('click', closeDeveloperModal);
+  var developerModal = document.getElementById('developerModal'); if (developerModal) developerModal.addEventListener('click', function (event) { if (event.target === event.currentTarget) closeDeveloperModal(); });
+  var developerForm = document.getElementById('developerForm'); if (developerForm) developerForm.addEventListener('submit', saveDeveloper);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function (event) {
     if (!document.getElementById('imagePreviewModal').classList.contains('hidden') && event.key === 'ArrowLeft') movePreview(-1);
     if (!document.getElementById('imagePreviewModal').classList.contains('hidden') && event.key === 'ArrowRight') movePreview(1);
