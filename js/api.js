@@ -156,7 +156,7 @@
       body: JSON.stringify(payload)
     });
     var body = await response.json().catch(function () { return {}; });
-    if (!response.ok) throw new Error('新增用户失败（HTTP ' + response.status + '）： ' + (body.error || body.message || 'Edge Function 未返回具体原因。'));
+    if (!response.ok) throw new Error(body.error || body.message || '新增用户失败，请稍后重试。');
     return body;
   }
 

@@ -266,6 +266,17 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .user-select { height: 44px; min-width: 155px; padding: 0 13px; border: 1px solid #171717; border-radius: 9px; color: #171717; background: #fff; outline: 0; font-size: 13px; }
 .user-add-button { min-height: 44px; padding: 0 20px; border: 1px solid #171717; border-radius: 9px; color: #171717; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .user-add-button:hover { background: #fff6e0; }
+.batch-user-content { padding: 24px 28px 28px; }
+.batch-format-note { padding: 15px; border: 1px solid #eadfce; border-radius: 10px; background: #fffaf0; color: #666; font-size: 12px; line-height: 1.7; }
+.batch-format-note strong { color: #171717; font-size: 14px; }
+.batch-format-note p { margin: 5px 0; }
+.batch-format-note code { display: block; margin: 8px 0; color: #ed5a52; font: 700 12px var(--body); }
+.batch-example { padding: 8px; overflow: auto; color: #777; background: #fff; white-space: nowrap; }
+.batch-dropzone { min-height: 150px; margin-top: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed #9b6848; border-radius: 12px; color: #171717; background: #fff; cursor: pointer; text-align: center; }
+.batch-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.batch-dropzone > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #ed5a52; background: #fff0e6; font-size: 21px; }
+.batch-dropzone small { color: #ed5a52; }
+.batch-dropzone.dragging { border-color: #ed5a52; background: #fff8ed; }
 .users-table-card { min-height: 0; overflow: hidden; border: 1px solid #171717; border-radius: 18px; background: #fff; }
 .users-table { width: 100%; border-collapse: collapse; table-layout: fixed; color: #171717; font-size: 12px; }
 .users-table th, .users-table td { padding: 15px 20px; text-align: left; vertical-align: middle; }

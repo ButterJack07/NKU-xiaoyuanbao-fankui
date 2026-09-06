@@ -75,6 +75,35 @@
   ['userSearch', 'userDepartment', 'userStatus'].forEach(function (id) { document.getElementById(id).addEventListener('input', function () { currentPage = 1; render(); }); document.getElementById(id).addEventListener('change', function () { currentPage = 1; render(); }); });
   document.getElementById('userPrevPage').addEventListener('click', function () { if (currentPage > 1) { currentPage -= 1; render(); } });
   document.getElementById('userNextPage').addEventListener('click', function () { currentPage += 1; render(); });
-  document.getElementById('addUserButton').addEventListener('click', function () { toast('新增账号需要通过安全的 Supabase Auth 管理接口创建。', ''); });
+  var batchModal = document.getElementById('batchUserModal');
+  var batchFile = document.getElementById('batchFile');
+  var batchDropzone = document.getElementById('batchDropzone');
+  document.getElementById('batchUserButton').addEventListener('click', function () { batchModal.classList.remove('hidden'); });
+  document.getElementById('closeBatchUser').addEventListener('click', function () { batchModal.classList.add('hidden'); });
+  document.getElementById('cancelBatchUser').addEventListener('click', function () { batchModal.classList.add('hidden'); });
+  batchModal.addEventListener('click', function (event) { if (event.target === batchModal) batchModal.classList.add('hidden'); });
+  batchFile.addEventListener('change', function () { document.getElementById('batchFileName').textContent = batchFile.files[0] ? batchFile.files[0].name : '未选择文件'; });
+  ['dragenter', 'dragover'].forEach(function (name) { batchDropzone.addEventListener(name, function (event) { event.preventDefault(); batchDropzone.classList.add('dragging'); }); });
+  ['dragleave', 'drop'].forEach(function (name) { batchDropzone.addEventListener(name, function (event) { event.preventDefault(); batchDropzone.classList.remove('dragging'); }); });
+  batchDropzone.addEventListener('drop', function (event) { var file = event.dataTransfer.files[0]; if (file && /\.xlsx$/i.test(file.name)) { var transfer = new DataTransfer(); transfer.items.add(file); batchFile.files = transfer.files; document.getElementById('batchFileName').textContent = file.name; } });
+  document.getElementById('importBatchUser').addEventListener('click', async function () {
+    var file = batchFile.files[0], error = document.getElementById('batchUserError'), button = document.getElementById('importBatchUser');
+    error.classList.add('hidden');
+    if (!file || !/\.xlsx$/i.test(file.name)) { error.textContent = '请选择 .xlsx 格式文件。'; error.classList.remove('hidden'); return; }
+    if (!window.XLSX) { error.textContent = 'Excel 解析组件加载失败，请刷新页面重试。'; error.classList.remove('hidden'); return; }
+    button.disabled = true; button.textContent = '正在读取…';
+    try {
+      var workbook = window.XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      var data = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+      var required = ['账号', '姓名', '工号', '所属部门', '初始密码'];
+      if (!data.length || required.some(function (key) { return !Object.prototype.hasOwnProperty.call(data[0], key); })) throw new Error('表头必须包含：账号、姓名、工号、所属部门、初始密码。');
+      var validDepartments = ['测试', '技术—前端', '技术—后端', '设计', '产品'];
+      var payloads = data.map(function (row, index) { var payload = { username: String(row['账号']).trim(), full_name: String(row['姓名']).trim(), employee_no: String(row['工号']).trim(), department: String(row['所属部门']).trim(), password: String(row['初始密码']).trim() }; if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + (index + 2) + ' 行账号格式不正确。'); if (!payload.full_name || !payload.employee_no || !validDepartments.includes(payload.department) || payload.password.length < 6) throw new Error('第 ' + (index + 2) + ' 行信息不完整或部门/密码不合法。'); return payload; });
+      button.textContent = '正在创建…';
+      for (var i = 0; i < payloads.length; i += 1) await window.PatchworkAPI.createTeamUser(payloads[i]);
+      toast('已成功新增 ' + payloads.length + ' 个普通用户。', 'success'); batchModal.classList.add('hidden'); batchFile.value = ''; document.getElementById('batchFileName').textContent = '未选择文件'; await load();
+    } catch (err) { error.textContent = err.message || '批量导入失败。'; error.classList.remove('hidden'); }
+    finally { button.disabled = false; button.textContent = '开始导入'; }
+  });
   window.PATCHWORK_READY.then(load).catch(function (error) { toast(error.message || '用户列表加载失败。', 'error'); });
 })();
