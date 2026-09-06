@@ -1,6 +1,15 @@
 # Local credentials and environment files
 *password*.txt
 *.password.txt
+pswd*.txt
+acc.txt
 .env
 .env.*
 !.env.example
+
+# Internal design assets (hi-fi mockups)
+测试网站/
+测试网站.zip
+
+# Internal ops scripts with account identifiers
+admin-bootstrap.sql
