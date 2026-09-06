@@ -50,6 +50,7 @@
     error.classList.add('hidden'); button.disabled = true; button.textContent = '正在创建…';
     try {
       var payload = Object.fromEntries(new FormData(form).entries());
+      payload.password = payload.employee_no;
       if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('账号只能使用 3-40 位字母、数字、下划线或短横线。');
       await window.PatchworkAPI.createTeamUser(payload);
       toast('普通用户创建成功。', 'success'); form.reset(); modal.classList.add('hidden'); await load();
@@ -95,10 +96,10 @@
     try {
       var workbook = window.XLSX.read(await file.arrayBuffer(), { type: 'array' });
       var data = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
-      var required = ['账号', '姓名', '工号', '所属部门', '初始密码'];
+      var required = ['账号', '姓名', '工号', '所属部门'];
       if (!data.length || required.some(function (key) { return !Object.prototype.hasOwnProperty.call(data[0], key); })) throw new Error('表头必须包含：账号、姓名、工号、所属部门、初始密码。');
       var validDepartments = ['测试', '技术—前端', '技术—后端', '设计', '产品'];
-      var payloads = data.map(function (row, index) { var payload = { username: String(row['账号']).trim(), full_name: String(row['姓名']).trim(), employee_no: String(row['工号']).trim(), department: String(row['所属部门']).trim(), password: String(row['初始密码']).trim() }; if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + (index + 2) + ' 行账号格式不正确。'); if (!payload.full_name || !payload.employee_no || !validDepartments.includes(payload.department) || payload.password.length < 6) throw new Error('第 ' + (index + 2) + ' 行信息不完整或部门/密码不合法。'); return payload; });
+      var payloads = data.map(function (row, index) { var payload = { username: String(row['账号']).trim(), full_name: String(row['姓名']).trim(), employee_no: String(row['工号']).trim(), department: String(row['所属部门']).trim() }; payload.password = payload.employee_no; if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + (index + 2) + ' 行账号格式不正确。'); if (!payload.full_name || !payload.employee_no || !validDepartments.includes(payload.department) || payload.password.length < 6) throw new Error('第 ' + (index + 2) + ' 行信息不完整或工号长度不足 6 位。'); return payload; });
       button.textContent = '正在创建…';
       for (var i = 0; i < payloads.length; i += 1) await window.PatchworkAPI.createTeamUser(payloads[i]);
       toast('已成功新增 ' + payloads.length + ' 个普通用户。', 'success'); batchModal.classList.add('hidden'); batchFile.value = ''; document.getElementById('batchFileName').textContent = '未选择文件'; await load();

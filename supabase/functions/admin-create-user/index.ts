@@ -25,7 +25,7 @@ Deno.serve(async (request) => {
     const fullName = String(body.full_name || '').trim();
     const employeeNo = String(body.employee_no || '').trim();
     const department = String(body.department || '').trim();
-    const password = String(body.password || '');
+    const password = String(body.password || employeeNo);
     if (!/^[A-Za-z0-9_-]{3,40}$/.test(username)) throw new Error('账号只能使用 3-40 位字母、数字、下划线或短横线。');
     if (!fullName || !employeeNo || !['测试', '技术—前端', '技术—后端', '设计', '产品'].includes(department)) throw new Error('请完整填写用户信息。');
     if (password.length < 6) throw new Error('初始密码至少需要 6 位。');
