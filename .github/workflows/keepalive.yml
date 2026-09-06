@@ -13,14 +13,12 @@ jobs:
         run: |
           BASE="${{ secrets.SUPABASE_URL }}"
           KEY="${{ secrets.SUPABASE_ANON_KEY }}"
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "$BASE/rest/v1/bug_reports?select=id&limit=1" \
-            -H "apikey: $KEY")
-          echo "bug_reports HTTP $code"
-          if [ "$code" != "200" ]; then
-            code2=$(curl -s -o /dev/null -w "%{http_code}" \
-              "$BASE/rest/v1/" \
-              -H "apikey: $KEY")
-            echo "rest root HTTP $code2"
-            [ "$code2" = "200" ] || exit 1
-          fi
+          for path in "rest/v1/bug_reports?select=id&limit=1" "rest/v1/"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+              --retry 4 --retry-delay 10 --retry-all-errors \
+              "$BASE/$path" -H "apikey: $KEY")
+            echo "$path -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+          done
+          echo "All endpoints failed"
+          exit 1
