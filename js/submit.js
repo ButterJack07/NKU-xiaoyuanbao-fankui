@@ -30,6 +30,10 @@
     return (bytes / 1024 / 1024).toFixed(1) + ' MB';
   }
 
+  function formatBugCode(bug) {
+    return bug && bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001';
+  }
+
   function renderFiles() {
     fileList.innerHTML = '';
     selectedFiles.forEach(function (file, index) {
@@ -122,7 +126,7 @@
        data.submitter_id = session.user.id;
       var rows = await window.PatchworkAPI.createBug(data);
       var bug = rows && rows[0];
-      document.getElementById('successCode').textContent = bug ? '#' + bug.id.slice(0, 8).toUpperCase() : '已创建';
+      document.getElementById('successCode').textContent = bug ? formatBugCode(bug) : 'BUG-0001';
       successModal.classList.remove('hidden');
     } catch (error) {
       showToast(error.message || '提交失败，请稍后重试。', 'error');

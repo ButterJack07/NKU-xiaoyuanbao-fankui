@@ -11,10 +11,10 @@
     topbar.innerHTML = '<a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页"><span><strong>校缘宝内测管理网站</strong><small class="brand-version">版本 ' + version + '</small></span></a>' +
       '<nav class="topnav" aria-label="主导航"><div class="nav-menu-card">' +
       '<a data-nav="home" class="nav-test-root" href="index.html">测试</a>' +
-      '<a data-department="技术—前端" href="index.html?department=技术—前端">技术—前端</a>' +
-      '<a data-department="技术—后端" href="index.html?department=技术—后端">技术—后端</a>' +
-      '<a data-department="设计" href="index.html?department=设计">设计</a>' +
-      '<a data-department="产品" href="index.html?department=产品">产品</a>' +
+      '<a data-department="技术—前端" href="department-bugs.html?department=技术—前端">技术—前端</a>' +
+      '<a data-department="技术—后端" href="department-bugs.html?department=技术—后端">技术—后端</a>' +
+      '<a data-department="设计" href="department-bugs.html?department=设计">设计</a>' +
+      '<a data-department="产品" href="department-bugs.html?department=产品">产品</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
       '</div><a class="nav-notice" href="index.html#myTasksPanel">公告信息</a></nav>' +
       '<button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>';
@@ -45,6 +45,25 @@
     document.querySelectorAll('[data-admin-only]').forEach(function (link) {
       link.classList.toggle('hidden', !profile || profile.role !== 'admin');
     });
+    if (profile && profile.role !== 'admin') {
+      var currentDepartment = new URLSearchParams(window.location.search).get('department');
+      var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
+      document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
+        var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
+        if (link.hasAttribute('data-admin-only')) isAllowed = false;
+        link.classList.toggle('nav-disabled', !isAllowed);
+        link.setAttribute('aria-disabled', String(!isAllowed));
+        if (!isAllowed) link.removeAttribute('href');
+      });
+      var currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      var isDepartmentPage = currentPage === 'department-bugs.html';
+      var isTestPage = ['index.html', 'test-cases.html', 'bug-reports.html', 'submit-bug.html'].includes(currentPage);
+      if (profile.department === '测试' && isDepartmentPage) {
+        window.location.replace('index.html');
+      } else if (profile.department !== '测试' && (!isDepartmentPage || currentDepartment !== profile.department)) {
+        window.location.replace('department-bugs.html?department=' + encodeURIComponent(profile.department));
+      }
+    }
   }
 
   renderNavigation();

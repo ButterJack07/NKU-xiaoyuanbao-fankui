@@ -11,6 +11,7 @@
   var currentBugId = null;
   var previewImages = [];
   var previewIndex = 0;
+  var accessRedirectTimer = null;
   var bugList = document.getElementById('bugList');
   var loadingState = document.getElementById('loadingState');
   var emptyState = document.getElementById('emptyState');
@@ -28,6 +29,10 @@
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function bugCode(bug) {
+    return bug && bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001';
   }
 
   function formatDate(value, includeTime) {
@@ -275,6 +280,31 @@
     var testGroupServices = document.getElementById('testGroupServices');
     var departmentCaseShell = document.getElementById('departmentCaseShell');
     var workspaceHeading = document.getElementById('workspaceHeading');
+    var accessDenied = document.getElementById('accessDenied');
+    var accessDeniedText = document.getElementById('accessDeniedText');
+    var profileDepartment = currentProfile && currentProfile.department;
+    var denied = departmentFromUrl && currentProfile && currentProfile.role !== 'admin' && profileDepartment !== departmentFromUrl;
+    if (accessDenied) accessDenied.classList.toggle('hidden', !denied);
+    if (accessDeniedText && denied) accessDeniedText.textContent = '当前账号无权限访问' + departmentFromUrl + '的工作台。';
+    if (denied) {
+      if (workspaceHeading) workspaceHeading.classList.add('hidden');
+      if (testGroupServices) testGroupServices.classList.add('hidden');
+      if (departmentCaseShell) departmentCaseShell.classList.add('hidden');
+      var countdown = document.getElementById('accessDeniedCountdown');
+      var seconds = 5;
+      if (accessRedirectTimer) window.clearInterval(accessRedirectTimer);
+      if (countdown) countdown.textContent = seconds + ' 秒后返回你的工作台';
+      accessRedirectTimer = window.setInterval(function () {
+        seconds -= 1;
+        if (countdown) countdown.textContent = seconds > 0 ? seconds + ' 秒后返回你的工作台' : '正在返回你的工作台…';
+        if (seconds <= 0) {
+          window.clearInterval(accessRedirectTimer);
+          var home = profileDepartment === '测试' ? 'index.html' : 'index.html?department=' + encodeURIComponent(profileDepartment || '测试');
+          window.location.replace(home);
+        }
+      }, 1000);
+      return;
+    }
     if (!title || !description) return;
     if (isDepartmentView) {
       if (testGroupServices) testGroupServices.classList.add('hidden');
@@ -327,7 +357,7 @@
       var mine = currentProfile && bug.assignee_id === currentProfile.id;
       var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
       var importanceLabel = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
-      return '<tr><td>BUG-' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</td><td class="case-file-name">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="case-download-link" href="mailto:">联系提交人</a></td><td class="' + (mine ? 'department-mine' : '') + '">' + escapeHtml(mine ? (bug.assignee || '—') + '（我的）' : (bug.assignee || '—')) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at, true)) + '</td><td><button class="case-download-link" type="button" data-department-case="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
+      return '<tr><td>' + bugCode(bug) + '</td><td class="case-file-name">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="case-download-link" href="mailto:">联系提交人</a></td><td class="' + (mine ? 'department-mine' : '') + '">' + escapeHtml(mine ? (bug.assignee || '—') + '（我的）' : (bug.assignee || '—')) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at, true)) + '</td><td><button class="case-download-link" type="button" data-department-case="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
     }).join('');
     empty.classList.toggle('hidden', filtered.length !== 0);
   }
@@ -392,7 +422,7 @@
       var isMine = currentProfile && bug.assignee_id === currentProfile.id;
       var importanceLabel = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
       var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
-      return '<tr><td>BUG-' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</td><td class="department-title-cell">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="department-link" href="mailto:">联系提交人</a></td><td class="' + (isMine ? 'department-mine' : '') + '">' + escapeHtml(isMine ? currentName + '（我的）' : currentName) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at)) + '</td><td><button class="department-link" type="button" data-department-bug="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
+      return '<tr><td>' + bugCode(bug) + '</td><td class="department-title-cell">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="department-link" href="mailto:">联系提交人</a></td><td class="' + (isMine ? 'department-mine' : '') + '">' + escapeHtml(isMine ? currentName + '（我的）' : currentName) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at)) + '</td><td><button class="department-link" type="button" data-department-bug="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
     }).join('');
     empty.classList.toggle('hidden', rows.length !== 0);
   }
@@ -508,7 +538,7 @@
   }
 
   function renderDrawer(bug) {
-    document.getElementById('drawerCode').textContent = '#' + bug.id.slice(0, 8).toUpperCase() + ' · ' + formatDate(bug.created_at, true);
+    document.getElementById('drawerCode').textContent = bugCode(bug) + ' · ' + formatDate(bug.created_at, true);
     document.getElementById('drawerTitle').textContent = bug.title;
     var attachments = renderAttachments(bug.attachment_urls || []);
     var departments = uniqueDepartments();
@@ -676,6 +706,7 @@
     currentProfile = window.PATCHWORK_PROFILE || null;
     renderIdentity();
     renderMyTasks();
+    updateWorkspaceView();
     renderDepartmentTable();
     return currentProfile;
   }

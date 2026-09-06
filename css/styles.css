@@ -147,6 +147,11 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .department-table-panel { margin-top: 18px; }
 .department-case-shell { margin-top: 0; }
 .department-case-shell.hidden { display: none !important; }
+.nav-disabled { opacity: .55; cursor: not-allowed !important; pointer-events: none; }
+.access-denied { margin-top: 40px; padding: 72px 32px; border: 1px solid #171717; border-radius: 18px; background: #fff; text-align: center; }
+.access-denied h1 { margin: 0 0 12px; color: #19212b; font: 700 28px var(--body); }
+.access-denied p { margin: 0; color: #969d99; font-size: 13px; }
+.access-denied-countdown { margin-top: 18px !important; color: #ed5a52 !important; font-weight: 700; }
 .department-case-shell > .cases-topbar { display: none; }
 .workspace-heading.hidden { display: none !important; }
 .department-case-table-card { min-height: 420px; }
@@ -206,12 +211,20 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .cases-title h1 { margin: 0 0 12px; color: #19212b; font: 700 42px/1.15 var(--body); letter-spacing: -.05em; }
 .cases-title p:not(.eyebrow) { margin: 0; color: #969d99; font-size: 13px; }
 .bug-reports-shell .cases-title { padding-bottom: 24px; }
+.bug-report-breadcrumb { display: flex; }
 .bug-report-actions { align-items: center; }
 .bug-report-actions .cases-search { flex: 1 1 320px; }
+.bug-report-actions .case-action-button { white-space: nowrap; }
 .bug-report-table-card { min-height: 420px; }
+.bug-updated-column { min-width: 160px; width: 18%; }
+.department-only-table th, .department-only-table td { white-space: nowrap; }
 .bug-submit-shell { max-width: 920px; }
 .bug-submit-title { padding-bottom: 28px; }
 .bug-submit-card { width: 100%; padding: 32px; border: 1px solid #171717; border-radius: 18px; background: #fff; }
+.bug-submit-card .form-card-heading { justify-content: flex-start; align-items: flex-start; text-align: left; }
+.bug-submit-card .form-card-heading h2 { text-align: left; }
+.bug-form-title { margin: 0 0 28px; padding-bottom: 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee9df; text-align: left; }
+.bug-form-title h2 { margin: 0; color: #19212b; font: 700 25px/1.2 var(--body); letter-spacing: -.04em; text-align: left; }
 .bug-submit-card .field { margin-bottom: 20px; }
 .bug-submit-card .field > span { display: block; margin-bottom: 9px; color: #171717; font-size: 13px; font-weight: 600; }
 .bug-submit-card .field > span i { color: #ed5a52; font-style: normal; }
@@ -545,11 +558,11 @@ i { font-style: normal; }
 .form-actions { padding: 25px 34px; display: flex; justify-content: flex-end; gap: 12px; background: #e9e7dd; }
 
 .modal-backdrop { display: grid; place-items: center; padding: 20px; }
-.success-modal { width: min(480px, 100%); padding: 45px; border: 1px solid var(--ink); background: var(--surface); text-align: center; box-shadow: 10px 10px 0 var(--acid); }
-.success-mark { width: 60px; height: 60px; margin: 0 auto 22px; border-radius: 50%; display: grid; place-items: center; background: var(--acid); font-size: 28px; }
-.success-modal h2 { margin-bottom: 12px; font: 700 28px/1.15 var(--display); letter-spacing: -.03em; }
+.success-modal { width: min(460px, calc(100% - 30px)); max-height: calc(100vh - 30px); overflow: auto; padding: 32px; border: 1px solid #171717; border-radius: 18px; background: #fff; text-align: center; box-shadow: none; }
+.success-mark { width: 54px; height: 54px; margin: 0 auto 20px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: linear-gradient(145deg, var(--orange), var(--orange-deep)); font-size: 25px; }
+.success-modal h2 { margin: 0 0 12px; color: #19212b; font: 700 25px/1.2 var(--body); letter-spacing: -.04em; }
 .success-modal > p:not(.eyebrow) { color: var(--muted); font-size: 13px; }
-.modal-actions { margin-top: 26px; display: flex; justify-content: center; gap: 10px; }
+.modal-actions { margin-top: 26px; display: flex; justify-content: flex-end; gap: 10px; }
 .developer-modal { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--ink); background: var(--surface); box-shadow: 10px 10px 0 var(--acid); }
 .login-modal { width: min(650px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--ink); background: var(--surface); box-shadow: 10px 10px 0 var(--acid); }
 .login-filters { padding: 18px 30px 0; display: flex; align-items: center; gap: 12px; }
