@@ -1,136 +1,183 @@
-# 校园宝 Bug 反馈平台
+# 校缘宝内测管理网站
 
-一个无需自建后端的双页面内部 Bug 工作流：
+校缘宝是面向内测团队的缺陷、测试用例、公告和账号协作平台。项目是静态前端，使用 Supabase 提供认证、数据库、文件存储和安全管理接口。
 
-- 网站 A：`submit.html`，提交问题信息与相关图片。
-- 网站 B：`index.html`，查看、搜索和筛选问题，填写修复计划并标记已解决。
-- 数据层：浏览器通过 Supabase REST API 和 Storage API 直接通信。
+## 在线部署
 
-## 在线访问
+- GitHub 仓库：<https://github.com/ButterJack07/NKU-xiaoyuanbao-fankui>
+- GitHub Pages：<https://butterjack07.github.io/NKU-xiaoyuanbao-fankui/>
+- Cloudflare Pages：部署后使用 Cloudflare 自动生成的 `*.pages.dev` 地址。
 
-项目已通过 GitHub Pages 部署，可以直接访问：
+当前站点版本标识为：
 
-- Bug 修复看板：https://butterjack07.github.io/NKU-xiaoyuanbao-fankui/
-- Bug 提交页面：https://butterjack07.github.io/NKU-xiaoyuanbao-fankui/submit.html
-- GitHub 仓库：https://github.com/ButterJack07/NKU-xiaoyuanbao-fankui
+```text
+先行版
+```
 
-GitHub Pages 发布后可能需要几分钟完成部署。如果页面暂时显示 404，请稍后刷新，并在仓库的 **Settings → Pages** 中检查部署状态。
+## 核心功能
 
-## 功能说明
+- 账号/姓名 + 密码登录，账号由管理员创建，姓名登录要求姓名唯一。
+- 部门工作台：测试、技术—前端、技术—后端、设计、产品。
+- 超级管理员用户管理、普通用户创建、批量 XLSX 导入、编辑和密码重置。
+- 测试组首页、测试用例上传、编号、搜索、排序、批量 ZIP 下载。
+- 软件缺陷报告提交、部门分发、部门列表、详情页、负责人、状态、转组和流转日志。
+- 缺陷附件下载，文件名按 `BUG-0001-01.ext` 规则生成。
+- 公告消息：系统公告和管理员公告，支持按部门范围查看与管理员/组长发布。
+- 个人信息、联系方式、按日联系时间、账户管理和密码修改。
+- Cloudflare Worker 定时访问 Supabase 健康检查接口。
 
-### 当前版本新增
+## 页面入口
 
-- Supabase Auth 团队登录：用户名映射为内部邮箱，密码使用工号；账号需要由管理员在 Supabase Auth 中创建，并在 `profiles` 表登记。
-- 固定部门：测试、技术—前端、技术—后端、设计、产品；支持超级管理员角色。
-- 测试用例中心：提交结构化用例，系统自动生成编号，支持汇总列表和 CSV 导出。
-- 缺陷归属部门筛选、转组备注、责任人字段和 CSV 导出。
-- `assignment_events` 和 `notifications` 数据表用于后续转组历史与提醒扩展。
+```text
+login.html                  登录
+index.html                  测试组首页
+test-cases.html             测试用例列表
+upload-test-case.html       上传测试用例
+bug-reports.html            测试组软件缺陷列表
+department-bugs.html        部门缺陷列表
+submit-bug.html             新建缺陷报告
+bug-detail.html             缺陷详情
+announcements.html          公告消息
+announcement-detail.html    公告详情
+user-management.html        超级管理员用户管理
+```
 
-执行新版 `supabase.sql` 后，必须在 Supabase Authentication 中创建团队账号，并插入对应的 `profiles` 记录。例如用户名为 `zhangsan` 时，登录邮箱使用 `zhangsan@team.xiaoyuanbao.internal`，密码填写工号。超级管理员的 `role` 设置为 `admin`，组长设置为 `leader`。
+## 部门和角色
 
-首次创建超级管理员请参照 `admin-bootstrap.sql`：先在 Supabase Authentication 中创建账号，再将该账号 UID 写入 SQL 模板。Supabase 不提供读取明文密码的能力，数据库密码也不能替代 Auth 登录密码。
+部门：
 
-### Bug 提交端
+```text
+管理
+测试
+技术—前端
+技术—后端
+设计
+产品
+```
 
-- 填写标题、反馈人、功能模块和运行环境。
-- 设置轻、中、重三个重要程度等级。
-- 提供问题描述、复现步骤、预期结果和实际结果。
-- 上传 PNG、JPG、GIF、WebP、BMP 或 AVIF 图片。
-- 每条 Bug 最多上传 8 张图片，每张不超过 10 MB。
+角色：
 
-### Bug 修复看板
+```text
+member   普通成员
+leader   部门组长
+admin    超级管理员
+```
 
-- 查看待处理、修复中和已解决问题的数量。
-- 按关键词、状态和重要程度筛选 Bug。
-- 看板任务条根据重要程度使用绿色、黄色和红色背景区分。
-- 查看完整问题描述、复现步骤和问题图片。
-- 图片附件会在问题详情中显示缩略图，点击后可在当前页面弹窗查看大图。
-- 登记开发人员姓名和所属部门。
-- 从已登记人员中直接选择登录，并在浏览器 `localStorage` 保存当前身份。
-- 登录后在看板顶部查看直接分配给本人或所在部门的任务，点击即可进入问题详情。
-- 可直接分配给整个部门，让每位部员都能看到；也可以指定具体负责人。
-- 填写修复计划、负责人和计划完成日期。
-- 勾选并保存已解决的 Bug。
+普通成员只能访问自己的部门工作台。测试组成员进入测试组首页；其他部门成员直接进入本部门缺陷列表。超级管理员可以访问用户管理和全部业务内容。
 
-## 使用流程
+## Supabase 初始化
 
-1. 测试或产品人员打开 Bug 提交页面。
-2. 填写问题信息并上传相关截图或问题图片。
-3. 数据通过 Supabase REST API 写入 `bugs` 表。
-4. 开发人员在修复看板查看问题并填写修复计划。
-5. 开始处理后，问题状态自动变为“修复中”。
-6. 修复并验证完成后，勾选“标记为已解决”。
-
-## Supabase 配置
-
-1. 在 Supabase 创建一个项目。
-2. 打开 SQL Editor，完整执行 `supabase.sql`。
-3. 在 Project Settings / API 中复制 Project URL 和 anon/publishable key。
-4. 修改 `js/config.js`：
+1. 在 Supabase 创建项目。
+2. 在 SQL Editor 执行最新版 `supabase.sql`。
+3. 创建 Storage buckets：
+   - `bug-attachments`
+   - `test-case-files`
+4. 在 `js/config.js` 配置 Project URL 和公开 Publishable/anon key：
 
 ```js
 window.PATCHWORK_CONFIG = {
   supabaseUrl: 'https://你的项目.supabase.co',
-  supabaseAnonKey: '你的 anon 或 publishable key',
-  tableName: 'bugs',
-  storageBucket: 'bug-attachments'
+  supabaseAnonKey: '你的公开 publishable key',
+  tableName: 'bug_reports',
+  storageBucket: 'bug-attachments',
+  testCaseStorageBucket: 'test-case-files',
+  authEmailDomain: 'team.xiaoyuanbao.internal',
+  version: '先行版'
 };
 ```
 
-更完整的数据库创建、Storage、RLS 策略和错误排查说明请查看 [`sp.md`](sp.md)。
+前端只能使用公开 key，不能写入数据库密码、Secret key 或 `service_role key`。
 
-如果数据库是在开发人员功能上线前创建的，也需要重新执行最新版 `supabase.sql`，以创建 `developers` 表并为 `bugs` 表增加部门和人员关联字段。
+### 初始化超级管理员
 
-> 前端只能使用 Supabase 的 anon/publishable key。不要使用数据库密码、Secret key 或 service role key。
+使用 `admin-bootstrap.sql` 模板：
+
+1. 在 Supabase Authentication 中创建 Auth 用户。
+2. 内部邮箱格式为：
+
+```text
+账号@team.xiaoyuanbao.internal
+```
+
+3. 复制 User UID。
+4. 将模板中的占位符替换后，在 SQL Editor 执行。
+5. 超级管理员部门固定为 `管理`，角色为 `admin`。
+
+### Edge Functions
+
+项目使用以下 Supabase Edge Functions：
+
+```text
+admin-create-user          超管创建普通用户
+admin-reset-password       超管将密码重置为工号
+resolve-login-identity     姓名登录解析账号
+```
+
+它们的代码位于：
+
+```text
+supabase/functions/
+```
+
+部署时不要把 `SUPABASE_SERVICE_ROLE_KEY` 放入前端；它只能作为 Edge Function 的服务端密钥。
+
+## Cloudflare Worker 保活
+
+Worker 位于：
+
+```text
+keepalive-worker/
+```
+
+作用是每 24 小时只读访问 Supabase `healthcheck` 表。当前 Cloudflare Cron 应设置为：
+
+```text
+0 0 * * *
+```
+
+需要配置两个 Worker 变量：
+
+```text
+SUPABASE_URL
+SUPABASE_ANON_KEY
+```
+
+不要配置或提交 `SUPABASE_SERVICE_ROLE_KEY`。先在 Supabase 执行 `supabase.sql` 中的 healthcheck 建表部分，再部署 Worker。
 
 ## 本地运行
 
-使用静态服务器运行项目，不要直接双击 HTML：
+不要直接双击 HTML 文件。使用 HTTP 静态服务器：
 
 ```bash
 python -m http.server 8080
 ```
 
-浏览器访问：
-
-- 提交端：http://localhost:8080/submit.html
-- 看板端：http://localhost:8080/index.html
-
-## GitHub Pages 部署
-
-本项目是纯静态网站，可以直接使用 GitHub Pages：
-
-1. 打开 GitHub 仓库的 **Settings → Pages**。
-2. 在 **Build and deployment** 中选择 **Deploy from a branch**。
-3. Branch 选择 `main`，目录选择 `/ (root)`。
-4. 点击 **Save**，等待 GitHub Actions 完成部署。
-5. 后续推送到 `main` 分支后，GitHub Pages 会自动更新。
-
-前端的 Supabase Project URL 和 publishable key 可以出现在 GitHub Pages 中，它们的实际访问权限由 `supabase.sql` 中的 RLS 策略控制。数据库密码和 service role key 绝对不能提交到仓库。
-
-## 数据流
+访问：
 
 ```text
-submit.html
-  ├── POST /storage/v1/object/bug-attachments/...  上传附件
-  └── POST /rest/v1/bugs                       新建 Bug
-
-index.html
-  ├── GET /rest/v1/bugs                        获取列表
-  └── PATCH /rest/v1/bugs?id=eq.{id}           保存修复计划/状态
+http://localhost:8080/login.html
 ```
 
-公开的 anon/publishable key 仅获得 `supabase.sql` 中 RLS 策略授予的权限。不要把数据库密码、service role key 或管理员凭据写入前端。
+直接使用 `file:///` 会导致 Supabase Auth、CDN、Storage 和跨域请求异常。
+
+## GitHub Pages / Cloudflare Pages
+
+这是纯静态项目，不需要构建工具：
+
+```text
+Framework preset: None
+Build command: exit 0
+Build output directory: .
+```
+
+`index.html` 位于仓库根目录时，Root directory 使用 `/`。GitHub 推送后，Pages 会自动重新部署。
+
+Cloudflare Pages 和 Supabase Edge Functions 是独立部署的：更新前端只需推送 GitHub；更新 Edge Function 必须单独重新部署对应函数。
 
 ## 安全说明
 
-当前 GitHub Pages 地址可以被公网访问，而现有 Supabase 策略允许匿名访问者读取、新建和更新 Bug，因此当前版本适合演示、原型或地址受控的小型团队。
-
-正式作为内部系统使用时，建议：
-
-- 接入 Supabase Auth，要求开发人员登录后才能修改 Bug。
-- 将数据库 `update` 策略限制为 `authenticated` 用户。
-- 根据需要保留匿名提交，或同样要求提交人员登录。
-- 将附件 Bucket 改为私有，通过 Signed URL 访问。
-- 使用公司 VPN、身份访问网关或其他内网访问控制保护页面。
-- 如果数据库密码曾被提交到 Git 历史，立即在 Supabase 控制台重置密码。
+- 不要提交密码、数据库密码、Supabase Secret key 或 service role key。
+- Publishable/anon key 可以出现在静态前端，但权限由 RLS 控制。
+- Auth 用户密码不能从 Supabase 读取，只能重置。
+- 普通用户创建和密码重置必须通过 Edge Function。
+- 修改数据库结构后，及时在 Supabase SQL Editor 执行对应迁移并刷新 schema cache。

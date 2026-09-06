@@ -1,6 +1,6 @@
 # Supabase Keepalive Worker
 
-This Cloudflare Worker performs a read-only Supabase healthcheck every 12 hours.
+This Cloudflare Worker performs a read-only Supabase healthcheck every 24 hours.
 
 ## One-time Supabase setup
 

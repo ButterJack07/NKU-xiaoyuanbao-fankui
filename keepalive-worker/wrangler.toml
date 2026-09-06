@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-09-06"
 
 [triggers]
-crons = ["0 */12 * * *"]
+crons = ["0 0 * * *"]
 
 [vars]
 # Set the real values in Cloudflare Dashboard or with wrangler secret.

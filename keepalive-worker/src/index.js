@@ -12,8 +12,7 @@ async function pingSupabase(env) {
   const response = await fetch(endpoint, {
     method: 'GET',
     headers: {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`
+      apikey: env.SUPABASE_ANON_KEY
     }
   });
 
