@@ -52,16 +52,18 @@
     return base + extension.replace(/[^a-z0-9.]/g, '');
   }
 
-  async function uploadFile(file) {
+  async function uploadFile(file, bucketName) {
     if (!isConfigured()) throw new Error('Supabase 尚未配置。');
+    var bucket = bucketName || config.storageBucket;
+    var mimeType = file.type || 'application/octet-stream';
     var path = new Date().toISOString().slice(0, 10) + '/' + crypto.randomUUID() + '-' + cleanFileName(file.name);
-    var url = config.supabaseUrl.replace(/\/$/, '') + '/storage/v1/object/' + config.storageBucket + '/' + path;
+    var url = config.supabaseUrl.replace(/\/$/, '') + '/storage/v1/object/' + bucket + '/' + path;
     var response = await fetch(url, {
       method: 'POST',
       headers: {
         apikey: config.supabaseAnonKey,
-        Authorization: 'Bearer ' + config.supabaseAnonKey,
-        'Content-Type': file.type,
+        Authorization: 'Bearer ' + (window.PATCHWORK_AUTH_TOKEN || config.supabaseAnonKey),
+        'Content-Type': mimeType,
         'x-upsert': 'false'
       },
       body: file
@@ -72,7 +74,7 @@
       throw new Error(body.message || '附件上传失败：' + file.name);
     }
 
-    return config.supabaseUrl.replace(/\/$/, '') + '/storage/v1/object/public/' + config.storageBucket + '/' + path;
+    return config.supabaseUrl.replace(/\/$/, '') + '/storage/v1/object/public/' + bucket + '/' + path;
   }
 
   async function createBug(payload) {

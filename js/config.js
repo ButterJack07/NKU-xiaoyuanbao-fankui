@@ -6,6 +6,7 @@
     supabaseAnonKey: 'sb_publishable_xBjHJaEbGCAEGUweIhbgdw_ttEIka0r',
     tableName: 'bugs',
     storageBucket: 'bug-attachments',
+    testCaseStorageBucket: 'test-case-files',
     authEmailDomain: 'team.xiaoyuanbao.internal'
   };
 })();

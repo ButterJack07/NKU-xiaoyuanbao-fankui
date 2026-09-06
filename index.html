@@ -13,23 +13,19 @@
 <body>
   <div class="noise" aria-hidden="true"></div>
   <header class="topbar">
-    <a class="brand" href="index.html" aria-label="校园宝 Bug 反馈平台首页">
-      <span class="brand-mark">校</span>
-      <span><strong>校园宝</strong><small>BUG 反馈平台</small></span>
+    <a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页">
+      <span><strong>校缘宝内测管理网站</strong></span>
     </a>
     <nav class="topnav" aria-label="主导航">
-       <span class="nav-section-label">工作空间</span>
-       <a href="index.html"><span class="nav-icon">⌂</span>测试组首页</a>
-       <a class="active" href="index.html">缺陷看板</a>
-       <a href="test-cases.html">测试用例</a>
-       <a href="submit.html">反馈问题</a>
-       <span class="nav-section-label nav-section-spaced">部门视图</span>
-       <a href="index.html?department=测试"><span class="nav-dot dot-test"></span>测试</a>
-       <a href="index.html?department=技术—前端"><span class="nav-dot dot-front"></span>技术—前端</a>
-       <a href="index.html?department=技术—后端"><span class="nav-dot dot-back"></span>技术—后端</a>
-       <a href="index.html?department=设计"><span class="nav-dot dot-design"></span>设计</a>
-       <a href="index.html?department=产品"><span class="nav-dot dot-product"></span>产品</a>
-       <a class="nav-notice" href="#myTasksPanel"><span class="nav-icon">!</span>公告信息</a>
+       <div class="nav-menu-card">
+         <a data-nav="home" class="nav-test-root" href="index.html">测试</a>
+         <a data-department="技术—前端" href="index.html?department=技术—前端">技术—前端</a>
+         <a data-department="技术—后端" href="index.html?department=技术—后端">技术—后端</a>
+         <a data-department="设计" href="index.html?department=设计">设计</a>
+         <a data-department="产品" href="index.html?department=产品">产品</a>
+         <a data-admin-only class="admin-nav-link" href="user-management.html">超级管理员</a>
+       </div>
+       <a class="nav-notice" href="#myTasksPanel">公告信息</a>
     </nav>
     <div class="top-actions">
       <button id="openLoginModal" class="identity-button" type="button">
@@ -41,8 +37,8 @@
   </header>
 
   <main class="dashboard-shell">
-    <div class="workspace-heading"><div><p class="eyebrow">TEST GROUP / WORKSPACE</p><h1>测试组首页</h1><p>测试组所有成员均可查看测试用例与缺陷报告，两条业务线仍相对独立。</p></div><span class="workspace-role">内部协作空间</span></div>
-    <div class="workspace-breadcrumb"><span>测试</span><b>/</b><strong>测试组首页</strong><span class="workspace-date">今天 · 内部协作</span></div>
+    <div class="workspace-heading"><div><p class="eyebrow" id="workspaceEyebrow">TEST GROUP / WORKSPACE</p><h1 id="workspaceTitle">测试组首页</h1><p id="workspaceDescription">测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。</p></div><span id="workspaceRole" class="workspace-role">内部协作空间</span></div>
+    <div class="workspace-breadcrumb"><span>测试</span><b>/</b><strong id="workspaceBreadcrumb">测试组首页</strong><span class="workspace-date">今天 · 内部协作</span></div>
     <div id="configNotice" class="notice hidden" role="status"></div>
 
     <section class="home-services reveal" aria-label="工作入口">
@@ -62,7 +58,7 @@
       </a>
     </section>
 
-    <section id="myTasksPanel" class="my-tasks-panel reveal delay-1">
+    <section id="myTasksPanel" class="my-tasks-panel department-workspace reveal delay-1">
       <div class="my-tasks-heading">
         <div>
           <p class="eyebrow">MY ASSIGNMENTS</p>
@@ -79,7 +75,7 @@
       <div id="myTasksList" class="my-tasks-list hidden"></div>
     </section>
 
-    <section class="stats-grid reveal delay-2" aria-label="Bug 统计">
+    <section class="stats-grid department-workspace reveal delay-2" aria-label="Bug 统计">
       <article class="stat-card stat-total">
         <span>全部问题</span>
         <strong id="statTotal">—</strong>
@@ -102,7 +98,7 @@
       </article>
     </section>
 
-    <section class="board-panel reveal delay-2">
+    <section class="board-panel department-workspace reveal delay-2">
       <div class="panel-heading">
         <div>
           <p class="eyebrow">ISSUE REGISTER</p>
@@ -128,7 +124,7 @@
           <option value="medium">中</option>
           <option value="light">轻</option>
         </select>
-        <select id="departmentFilter" class="select-control" aria-label="部门筛选"><option value="all">全部部门</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option><option value="测试">测试</option></select>
+        <select id="departmentFilter" class="select-control" aria-label="部门筛选"><option value="all">当前部门</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option></select>
       </div>
 
       <div id="loadingState" class="state-box">
@@ -183,8 +179,8 @@
       <div class="developer-modal-header">
         <div>
           <p class="eyebrow">LOCAL DEVELOPER LOGIN</p>
-          <h2 id="loginModalTitle">选择开发人员登录</h2>
-          <p>无需密码。选择已登记身份后，本浏览器会记住你的个人任务视图。</p>
+           <h2 id="loginModalTitle">当前账号信息</h2>
+           <p>正式登录由 Supabase Auth 管理；个人身份来自当前账号的 profiles 记录。</p>
         </div>
         <button id="closeLoginModal" class="icon-button" type="button" aria-label="关闭登录窗口">×</button>
       </div>
@@ -199,14 +195,14 @@
       </div>
       <div id="loginDeveloperList" class="login-developer-list"></div>
       <div id="loginEmpty" class="login-empty hidden">
-        <p>目前没有已登记的开发人员，请先完成登记。</p>
+         <p>当前账号已通过 Auth 登录，但尚未匹配到可分配的开发人员记录。</p>
       </div>
       <div id="logoutArea" class="logout-area hidden">
         <span>当前浏览器已保存登录身份。</span>
         <button id="logoutButton" class="button button-ghost button-small" type="button">退出当前身份</button>
       </div>
       <div class="login-register">
-        <button id="registerFromLogin" class="button button-ghost button-full" type="button">登记开发人员 →</button>
+         <button id="registerFromLogin" class="button button-ghost button-full" type="button">管理员登记分配人员 →</button>
       </div>
     </section>
   </div>
@@ -255,7 +251,8 @@
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
    <script src="js/config.js"></script>
    <script src="js/auth.js"></script>
-  <script src="js/api.js"></script>
+   <script src="js/workspace-nav.js"></script>
+   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

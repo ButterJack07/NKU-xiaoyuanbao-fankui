@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>校缘宝内测管理网站 · 用户管理</title><link rel="stylesheet" href="css/styles.css"></head>
+<body class="user-management-page">
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar"><a class="brand" href="index.html"><span><strong>校缘宝内测管理网站</strong></span></a><nav class="topnav"><div class="nav-menu-card"><a data-nav="home" class="nav-test-root" href="index.html">测试</a><a data-department="技术—前端" href="index.html?department=技术—前端">技术—前端</a><a data-department="技术—后端" href="index.html?department=技术—后端">技术—后端</a><a data-department="设计" href="index.html?department=设计">设计</a><a data-department="产品" href="index.html?department=产品">产品</a><a data-admin-only class="admin-nav-link" href="user-management.html">超级管理员</a></div><a class="nav-notice" href="index.html#myTasksPanel">公告信息</a></nav><button id="topUserCard" class="top-user-card" type="button" onclick="window.location.href='index.html'"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button></header>
+  <main class="dashboard-shell user-management-shell">
+    <div class="cases-topbar"><div class="cases-breadcrumb"><span>超级管理员</span><b>›</b><strong>用户管理</strong></div></div>
+    <section class="cases-title"><p class="eyebrow">ADMIN / ACCOUNTS</p><h1>用户管理</h1><p>管理用户账号、所属部门、权限和账号状态；前端、后端、设计、产品成员权限相同。</p></section>
+    <div class="user-actions"><label class="cases-search"><span>⌕</span><input id="userSearch" type="search" placeholder="搜索账号 / 姓名"></label><select id="userDepartment" class="user-select"><option value="all">部门筛选</option><option value="测试">测试</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option></select><select id="userStatus" class="user-select"><option value="all">账号状态</option><option value="true">启用</option><option value="false">停用</option></select><button id="addUserButton" class="user-add-button" type="button">新增用户</button></div>
+    <section class="users-table-card"><table class="users-table"><thead><tr><th>账号</th><th>姓名</th><th>所属部门</th><th>权限</th><th>账号状态</th><th>操作</th></tr></thead><tbody id="userList"></tbody></table><div id="userEmpty" class="cases-empty hidden">暂无用户账号</div></section>
+  </main>
+  <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/workspace-nav.js"></script><script src="js/user-management.js"></script>
+</body></html>

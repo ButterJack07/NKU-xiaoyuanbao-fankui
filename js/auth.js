@@ -4,6 +4,16 @@
   var config = window.PATCHWORK_CONFIG || {};
   var supabase = window.supabase;
   var isLoginPage = /login\.html$/i.test(window.location.pathname);
+  var profileStorageKey = 'xiaoyuanbao-profile-cache';
+
+  function readCachedProfile() {
+    try { return JSON.parse(localStorage.getItem(profileStorageKey) || 'null'); } catch (error) { localStorage.removeItem(profileStorageKey); return null; }
+  }
+
+  function cacheProfile(profile) {
+    if (profile) localStorage.setItem(profileStorageKey, JSON.stringify({ id: profile.id, username: profile.username, full_name: profile.full_name, employee_no: profile.employee_no, department: profile.department, role: profile.role, active: profile.active }));
+    else localStorage.removeItem(profileStorageKey);
+  }
 
   if (!supabase || !config.supabaseUrl || !config.supabaseAnonKey) {
     window.PATCHWORK_READY = Promise.resolve(null);
@@ -13,15 +23,20 @@
   var client = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
   window.PATCHWORK_SUPABASE = client;
   window.PATCHWORK_AUTH_TOKEN = '';
+  window.PATCHWORK_PROFILE = readCachedProfile();
 
   async function verifyProfile(session) {
     if (!session) return null;
     var result = await client.from('profiles').select('id,username,full_name,employee_no,department,role,active').eq('id', session.user.id).maybeSingle();
     if (result.error) throw result.error;
     if (!result.data || !result.data.active) {
+      window.PATCHWORK_PROFILE = null;
+      cacheProfile(null);
       await client.auth.signOut();
       throw new Error('账号尚未登记或已被停用，请联系超级管理员。');
     }
+    window.PATCHWORK_PROFILE = result.data;
+    cacheProfile(result.data);
     return result.data;
   }
 
@@ -38,6 +53,7 @@
 
   client.auth.onAuthStateChange(function (event, session) {
     window.PATCHWORK_AUTH_TOKEN = session ? session.access_token : '';
+    if (!session) { window.PATCHWORK_PROFILE = null; cacheProfile(null); }
     if (event === 'SIGNED_OUT' && !isLoginPage) window.location.replace('login.html');
   });
 

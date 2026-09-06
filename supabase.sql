@@ -67,6 +67,11 @@ create table if not exists public.test_cases (
   updated_at timestamptz not null default now()
 );
 
+alter table public.test_cases add column if not exists file_name text;
+alter table public.test_cases add column if not exists file_url text;
+alter table public.test_cases add column if not exists file_type text;
+alter table public.test_cases add column if not exists note text not null default '';
+
 create table if not exists public.assignment_events (
   id uuid primary key default gen_random_uuid(),
   bug_id uuid not null references public.bugs(id) on delete cascade,
@@ -250,6 +255,28 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'test-case-files',
+  'test-case-files',
+  true,
+  20971520,
+  array[
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+    'application/pdf',
+    'application/zip',
+    'application/octet-stream'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 drop policy if exists "internal upload bug attachments" on storage.objects;
 create policy "internal upload bug attachments"
 on storage.objects for insert to authenticated
@@ -259,6 +286,16 @@ drop policy if exists "public read bug attachments" on storage.objects;
 create policy "public read bug attachments"
 on storage.objects for select to authenticated
 using (bucket_id = 'bug-attachments');
+
+drop policy if exists "team upload test case files" on storage.objects;
+create policy "team upload test case files"
+on storage.objects for insert to authenticated
+with check (bucket_id = 'test-case-files');
+
+drop policy if exists "team read test case files" on storage.objects;
+create policy "team read test case files"
+on storage.objects for select to authenticated
+using (bucket_id = 'test-case-files');
 
 -- 该方案按需求采用匿名内部访问。正式上线时建议接入 Supabase Auth，
 -- 将看板 update 策略限制为 authenticated 开发成员，并关闭公网访问。

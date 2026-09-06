@@ -4,8 +4,10 @@
   var bugs = [];
   var developers = [];
   var currentDeveloper = null;
+  var currentProfile = null;
   var currentStatus = 'all';
   var currentDepartment = 'all';
+  var departmentFromUrl = new URLSearchParams(window.location.search).get('department');
   var currentBugId = null;
   var previewImages = [];
   var previewIndex = 0;
@@ -69,8 +71,12 @@
   }
 
   function restoreIdentity() {
+    currentProfile = window.PATCHWORK_PROFILE || null;
     var stored = readStoredIdentity();
-    currentDeveloper = stored ? developers.find(function (developer) { return developer.id === stored.id; }) || null : null;
+    currentDeveloper = currentProfile ? developers.find(function (developer) {
+      return developer.name === currentProfile.full_name && developer.department === currentProfile.department;
+    }) || null : (stored ? developers.find(function (developer) { return developer.id === stored.id; }) || null : null);
+    if (currentProfile) localStorage.removeItem(identityStorageKey);
     if (stored && !currentDeveloper) localStorage.removeItem(identityStorageKey);
     renderIdentity();
     renderMyTasks();
@@ -87,6 +93,7 @@
 
   async function logoutDeveloper() {
     currentDeveloper = null;
+    currentProfile = null;
     localStorage.removeItem(identityStorageKey);
     if (window.PATCHWORK_AUTH) await window.PATCHWORK_AUTH.signOut();
     renderIdentity();
@@ -99,7 +106,11 @@
     var avatar = document.getElementById('identityAvatar');
     var label = document.getElementById('identityLabel');
     var name = document.getElementById('identityName');
-    if (currentDeveloper) {
+    if (currentProfile) {
+      avatar.textContent = (currentProfile.full_name || currentProfile.username).slice(0, 1);
+      label.textContent = currentProfile.role === 'admin' ? '超级管理员' : currentProfile.department;
+      name.textContent = currentProfile.full_name || currentProfile.username;
+    } else if (currentDeveloper) {
       avatar.textContent = currentDeveloper.name.slice(0, 1);
       label.textContent = currentDeveloper.department;
       name.textContent = currentDeveloper.name;
@@ -112,18 +123,21 @@
     var topName = document.getElementById('topUserName');
     var topDepartment = document.getElementById('topUserDepartment');
     if (topAvatar && topName && topDepartment) {
-      topAvatar.textContent = currentDeveloper ? currentDeveloper.name.slice(0, 1) : '?';
-      topName.textContent = currentDeveloper ? currentDeveloper.name : '当前成员';
-      topDepartment.textContent = currentDeveloper ? currentDeveloper.department + ' · 已登录' : '测试组 · 未登录';
+      topAvatar.textContent = currentProfile ? (currentProfile.full_name || currentProfile.username).slice(0, 1) : (currentDeveloper ? currentDeveloper.name.slice(0, 1) : '?');
+      topName.textContent = currentProfile ? (currentProfile.full_name || currentProfile.username) : (currentDeveloper ? currentDeveloper.name : '当前成员');
+      topDepartment.textContent = currentProfile ? (currentProfile.role === 'admin' ? '超级管理员 · 已登录' : currentProfile.department + ' · 已登录') : (currentDeveloper ? currentDeveloper.department + ' · 已登录' : '测试组 · 未登录');
     }
     renderLoginDirectory();
   }
 
   function myTaskRows() {
-    if (!currentDeveloper) return [];
+    var identity = currentProfile || currentDeveloper;
+    if (!identity) return [];
+    var identityId = currentProfile ? currentProfile.id : currentDeveloper.id;
+    var identityDepartment = currentProfile ? currentProfile.department : currentDeveloper.department;
     return bugs.filter(function (bug) {
-      var assignedToMe = bug.assignee_id === currentDeveloper.id;
-      var assignedToMyDepartment = !bug.assignee_id && bug.assignee_department === currentDeveloper.department;
+      var assignedToMe = bug.assignee_id === identityId;
+      var assignedToMyDepartment = !bug.assignee_id && bug.assignee_department === identityDepartment;
       return bug.status !== 'resolved' && (assignedToMe || assignedToMyDepartment);
     });
   }
@@ -133,7 +147,7 @@
     var emptyState = document.getElementById('myTasksEmpty');
     var list = document.getElementById('myTasksList');
     var identity = document.getElementById('myTasksIdentity');
-    if (!currentDeveloper) {
+    if (!currentProfile && !currentDeveloper) {
       identity.textContent = '登录后查看个人任务';
       loginState.classList.remove('hidden');
       emptyState.classList.add('hidden');
@@ -143,7 +157,8 @@
     }
 
     var rows = myTaskRows();
-    identity.textContent = currentDeveloper.name + ' · ' + currentDeveloper.department + ' · ' + rows.length + ' 项';
+    var taskIdentity = currentProfile || currentDeveloper;
+    identity.textContent = (taskIdentity.full_name || taskIdentity.name || taskIdentity.username) + ' · ' + taskIdentity.department + ' · ' + rows.length + ' 项';
     loginState.classList.add('hidden');
     emptyState.classList.toggle('hidden', rows.length !== 0);
     list.classList.toggle('hidden', rows.length === 0);
@@ -159,6 +174,8 @@
     var list = document.getElementById('loginDeveloperList');
     var empty = document.getElementById('loginEmpty');
     var logoutArea = document.getElementById('logoutArea');
+    var registerButton = document.getElementById('registerFromLogin');
+    if (registerButton) registerButton.closest('.login-register').classList.toggle('hidden', !currentProfile || currentProfile.role !== 'admin');
     if (!developers.length) {
       list.innerHTML = '';
       list.classList.add('hidden');
@@ -187,7 +204,7 @@
         });
       });
     }
-    logoutArea.classList.toggle('hidden', !currentDeveloper);
+    logoutArea.classList.toggle('hidden', !currentDeveloper && !currentProfile);
   }
 
   function renderLoginFilters() {
@@ -231,12 +248,36 @@
     });
   }
 
-  var departmentFromUrl = new URLSearchParams(window.location.search).get('department');
   if (departmentFromUrl) {
     currentDepartment = departmentFromUrl;
     var departmentFilter = document.getElementById('departmentFilter');
     if (departmentFilter) departmentFilter.value = departmentFromUrl;
   }
+
+  function updateWorkspaceView() {
+    var isDepartmentView = Boolean(departmentFromUrl);
+    document.querySelectorAll('.department-workspace').forEach(function (node) { node.classList.toggle('hidden', !isDepartmentView); });
+    var title = document.getElementById('workspaceTitle');
+    var description = document.getElementById('workspaceDescription');
+    var eyebrow = document.getElementById('workspaceEyebrow');
+    var role = document.getElementById('workspaceRole');
+    var breadcrumb = document.getElementById('workspaceBreadcrumb');
+    if (!title || !description) return;
+    if (isDepartmentView) {
+      title.textContent = departmentFromUrl + '缺陷列表';
+      description.textContent = '查看、分配和跟进本部门负责的测试缺陷。';
+      eyebrow.textContent = 'DEPARTMENT / BUG REGISTER';
+      role.textContent = departmentFromUrl + '工作台';
+      breadcrumb.textContent = departmentFromUrl + '缺陷列表';
+    } else {
+      title.textContent = '测试组首页';
+      description.textContent = '测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。';
+      eyebrow.textContent = 'TEST GROUP / WORKSPACE';
+      role.textContent = '内部协作空间';
+      breadcrumb.textContent = '测试组首页';
+    }
+  }
+  updateWorkspaceView();
 
   function renderList() {
     var rows = filteredBugs();
@@ -540,7 +581,20 @@
     restoreIdentity();
   }
 
+  async function loadCurrentProfile() {
+    if (!window.PATCHWORK_AUTH || !window.PATCHWORK_AUTH.getSession) return null;
+    await window.PATCHWORK_READY;
+    currentProfile = window.PATCHWORK_PROFILE || null;
+    renderIdentity();
+    renderMyTasks();
+    return currentProfile;
+  }
+
   function openLoginModal() {
+    if (currentProfile) {
+      if (window.confirm('当前账号：' + (currentProfile.full_name || currentProfile.username) + '\n角色：' + currentProfile.role + '\n\n是否退出登录？')) logoutDeveloper();
+      return;
+    }
     renderLoginDirectory();
     document.getElementById('loginModal').classList.remove('hidden');
     document.body.classList.add('drawer-open');
@@ -659,7 +713,7 @@
     configNotice.textContent = '当前为未连接状态：请在 js/config.js 填入 Supabase 配置，并执行 supabase.sql。';
     configNotice.classList.remove('hidden');
   }
-  Promise.all([loadDevelopers(), loadBugs()]).catch(function (error) {
+  Promise.all([loadCurrentProfile(), loadDevelopers(), loadBugs()]).catch(function (error) {
     showToast(error.message || '团队信息加载失败，请确认已执行最新 supabase.sql。', 'error');
   });
 })();
