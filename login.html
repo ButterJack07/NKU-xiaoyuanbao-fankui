@@ -10,18 +10,19 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="login-page">
-  <div class="login-orb login-orb-sun"></div><div class="login-orb login-orb-coral"></div><div class="login-orb login-orb-peach"></div>
+  <div class="login-orb login-orb-peach"></div>
   <main class="login-shell">
-    <section class="login-brand"><span class="brand-mark">校</span><p class="eyebrow">TEAM WORKSPACE</p><h1>让每个问题<br><em>都有负责人。</em></h1><p>使用团队用户名和工号登录。账号由超级管理员创建，仅限团队成员使用。</p></section>
-    <section class="login-card"><span class="login-card-badge">校</span>
-      <p class="eyebrow">SECURE SIGN IN</p><h2>团队账号登录</h2>
+    <section class="login-card">
+      <span class="login-logo">校</span>
+      <h1>校缘宝内测管理网站</h1>
+      <p class="login-subtitle">内部协作入口</p>
       <form id="loginForm">
-        <label class="field"><span>用户名 / 姓名</span><input name="username" required autocomplete="username" placeholder="例如：zhangsan"></label>
-        <label class="field"><span>工号 / 密码</span><input name="password" type="password" required autocomplete="current-password" placeholder="请输入工号"></label>
+        <label class="field"><span>用户名</span><input name="username" required autocomplete="username" placeholder="请输入姓名"></label>
+        <label class="field"><span>密码</span><input name="password" type="password" required autocomplete="current-password" placeholder="123"></label>
         <p id="loginError" class="login-error hidden"></p>
-        <button class="button button-primary button-full" type="submit">登录工作台 →</button>
+        <button class="button button-primary button-full" type="submit">登录</button>
       </form>
-      <small class="login-help">如无法登录，请联系超级管理员创建或启用账号。</small>
+      <small class="login-help">账号由超级管理员创建，仅限团队成员使用。</small>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

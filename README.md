@@ -28,6 +28,8 @@ GitHub Pages 发布后可能需要几分钟完成部署。如果页面暂时显�
 
 执行新版 `supabase.sql` 后，必须在 Supabase Authentication 中创建团队账号，并插入对应的 `profiles` 记录。例如用户名为 `zhangsan` 时，登录邮箱使用 `zhangsan@team.xiaoyuanbao.internal`，密码填写工号。超级管理员的 `role` 设置为 `admin`，组长设置为 `leader`。
 
+首次创建超级管理员请参照 `admin-bootstrap.sql`：先在 Supabase Authentication 中创建账号，再将该账号 UID 写入 SQL 模板。Supabase 不提供读取明文密码的能力，数据库密码也不能替代 Auth 登录密码。
+
 ### Bug 提交端
 
 - 填写标题、反馈人、功能模块和运行环境。
