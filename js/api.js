@@ -160,6 +160,13 @@
     return body;
   }
 
+  async function resetTeamUserPassword(userId) {
+    var response = await fetch(config.supabaseUrl.replace(/\/$/, '') + '/functions/v1/admin-reset-password', { method: 'POST', headers: { apikey: config.supabaseAnonKey, Authorization: 'Bearer ' + window.PATCHWORK_AUTH_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId }) });
+    var body = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(body.error || body.message || '密码重置失败。');
+    return body;
+  }
+
   async function updateProfile(id, patch) {
     var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,created_at').single();
     if (result.error) throw result.error;
@@ -187,6 +194,7 @@
     listNotifications: listNotifications,
     createAssignmentEvent: createAssignmentEvent,
     createTeamUser: createTeamUser,
+    resetTeamUserPassword: resetTeamUserPassword,
     updateProfile: updateProfile
     ,listProfiles: listProfiles,
     downloadFile: downloadFile

@@ -62,7 +62,18 @@
     ready: window.PATCHWORK_READY,
     getSession: function () { return client.auth.getSession(); },
     signIn: async function (username, password) {
-      var email = username.trim().toLowerCase() + '@' + config.authEmailDomain;
+      var identity = username.trim();
+      var email = identity.toLowerCase() + '@' + config.authEmailDomain;
+      if (!/^[A-Za-z0-9_-]{3,40}$/.test(identity)) {
+        var resolver = await fetch(config.supabaseUrl.replace(/\/$/, '') + '/functions/v1/resolve-login-identity', {
+          method: 'POST',
+          headers: { apikey: config.supabaseAnonKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: identity })
+        });
+        var resolved = await resolver.json().catch(function () { return {}; });
+        if (!resolver.ok) return { data: { session: null, user: null }, error: new Error(resolved.error || '姓名不存在或姓名不唯一，请使用账号登录。') };
+        email = resolved.email;
+      }
       var result = await client.auth.signInWithPassword({ email: email, password: password });
       if (!result.error) {
         try { await verifyProfile(result.data.session); } catch (error) { return { data: { session: null, user: null }, error: error }; }

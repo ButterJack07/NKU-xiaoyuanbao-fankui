@@ -288,6 +288,10 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .user-status.disabled { color: #a3483c; }
 .user-edit-link { padding: 0; border: 0; color: #171717; background: transparent; cursor: pointer; font-size: 12px; }
 .user-edit-disabled { color: #a7aaa8; font-size: 12px; }
+.user-reset-link { margin-left: 12px; padding: 0; border: 0; color: #ed5a52; background: transparent; cursor: pointer; font-size: 12px; }
+.user-reset-link:hover { text-decoration: underline; }
+.reset-password-actions { padding: 22px 28px 8px; display: flex; justify-content: flex-end; gap: 10px; }
+.reset-password-modal > .login-error { margin: 0 28px 24px; }
 .user-pagination { min-height: 58px; padding: 0 20px; display: flex; align-items: center; justify-content: center; gap: 18px; border-top: 1px solid #eee9df; color: #777; font-size: 12px; }
 .user-pagination button { min-width: 64px; min-height: 32px; padding: 0 10px; border: 1px solid #171717; border-radius: 7px; color: #171717; background: #fff; cursor: pointer; font-size: 12px; }
 .user-pagination button:hover:not(:disabled) { background: #fff6e0; }

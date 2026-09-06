@@ -17,7 +17,7 @@
       <h1>校缘宝内测管理网站</h1>
       <p class="login-subtitle">内部协作入口</p>
       <form id="loginForm">
-        <label class="field"><span>用户名</span><input name="username" required autocomplete="username" placeholder="请输入姓名"></label>
+        <label class="field"><span>账号 / 姓名</span><input name="username" required autocomplete="username" placeholder="请输入账号或姓名"></label>
         <label class="field"><span>密码</span><input name="password" type="password" required autocomplete="current-password" placeholder="123"></label>
         <p id="loginError" class="login-error hidden"></p>
         <button class="button button-primary button-full" type="submit">登录</button>
@@ -32,7 +32,7 @@
       var form = event.currentTarget, button = form.querySelector('button'), error = document.getElementById('loginError');
       button.disabled = true; button.textContent = '正在验证…'; error.classList.add('hidden');
       try { var data = Object.fromEntries(new FormData(form).entries()); var result = await window.PATCHWORK_AUTH.signIn(data.username, data.password); if (result.error) throw result.error; window.location.replace(new URLSearchParams(window.location.search).get('next') || 'index.html'); }
-      catch (err) { error.textContent = '登录失败：用户名或工号不正确，或账号未启用。'; error.classList.remove('hidden'); button.disabled = false; button.textContent = '登录工作台 →'; }
+      catch (err) { error.textContent = '登录失败：' + (err.message || '账号或姓名不存在，或密码不正确。'); error.classList.remove('hidden'); button.disabled = false; button.textContent = '登录'; }
     });
   </script>
 </body>

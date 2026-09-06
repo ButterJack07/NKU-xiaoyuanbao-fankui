@@ -7,12 +7,13 @@
     var query = document.getElementById('userSearch').value.trim().toLowerCase();
     var department = document.getElementById('userDepartment').value;
     var status = document.getElementById('userStatus').value;
-    var visible = rows.filter(function (row) { return (!query || [row.username, row.full_name, row.employee_no].join(' ').toLowerCase().includes(query)) && (department === 'all' || row.department === department) && (status === 'all' || String(row.active) === status); });
+    var visible = rows.filter(function (row) { var matchesDepartment = department === 'all' || (department === 'admin' ? row.role === 'admin' : row.department === department); return (!query || [row.username, row.full_name, row.employee_no].join(' ').toLowerCase().includes(query)) && matchesDepartment && (status === 'all' || String(row.active) === status); });
     var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     var pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    list.innerHTML = pageRows.map(function (row) { var action = row.role === 'admin' ? '<span class="user-edit-disabled">不可编辑</span>' : '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; return '<tr><td>' + esc(row.username) + '</td><td>' + esc(row.full_name) + '</td><td>' + esc(row.department) + '</td><td>' + esc(row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员') + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
+    list.innerHTML = pageRows.map(function (row) { var action = row.role === 'admin' ? '<span class="user-edit-disabled">不可编辑</span>' : '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td>' + esc(row.full_name) + '</td><td>' + esc(row.department) + '</td><td>' + esc(row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员') + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
     list.querySelectorAll('.user-edit-link').forEach(function (button) { button.addEventListener('click', function () { openEditUser(button.dataset.userId); }); });
+    list.querySelectorAll('.user-reset-link').forEach(function (button) { button.addEventListener('click', function () { openResetPassword(button.dataset.resetUserId); }); });
     document.getElementById('userEmpty').classList.toggle('hidden', visible.length !== 0);
     document.getElementById('userPagination').classList.toggle('hidden', visible.length <= pageSize);
     document.getElementById('userPageInfo').textContent = '第 ' + currentPage + ' / ' + totalPages + ' 页 · 共 ' + visible.length + ' 条';
@@ -27,6 +28,10 @@
     rows = result.data || []; render();
   }
   var editModal = document.getElementById('editUserModal');
+  var resetModal = document.getElementById('resetPasswordModal');
+  var resetUserId = null;
+  function openResetPassword(id) { var row = rows.find(function (item) { return item.id === id; }); if (!row) return; resetUserId = id; document.getElementById('resetPasswordIdentity').textContent = '账号：' + row.username + '｜' + row.full_name; document.getElementById('resetPasswordError').classList.add('hidden'); resetModal.classList.remove('hidden'); }
+  function closeResetPassword() { resetModal.classList.add('hidden'); resetUserId = null; }
   function openEditUser(id) {
     var row = rows.find(function (item) { return item.id === id; });
     if (!row || row.role === 'admin') { toast('超级管理员不可编辑。', ''); return; }
@@ -61,6 +66,10 @@
   document.getElementById('closeEditUser').addEventListener('click', closeEditUser);
   document.getElementById('cancelEditUser').addEventListener('click', closeEditUser);
   editModal.addEventListener('click', function (event) { if (event.target === editModal) closeEditUser(); });
+  document.getElementById('closeResetPassword').addEventListener('click', closeResetPassword);
+  document.getElementById('cancelResetPassword').addEventListener('click', closeResetPassword);
+  resetModal.addEventListener('click', function (event) { if (event.target === resetModal) closeResetPassword(); });
+  document.getElementById('confirmResetPassword').addEventListener('click', async function () { var button = this, error = document.getElementById('resetPasswordError'); if (!resetUserId) return; button.disabled = true; button.textContent = '重置中…'; error.classList.add('hidden'); try { await window.PatchworkAPI.resetTeamUserPassword(resetUserId); closeResetPassword(); toast('密码已重置为工号。', 'success'); } catch (err) { error.textContent = err.message || '密码重置失败。'; error.classList.remove('hidden'); } finally { button.disabled = false; button.textContent = '确认重置'; } });
   document.getElementById('editUserForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     var form = event.currentTarget, button = form.querySelector('button[type="submit"]'), error = document.getElementById('editUserError');
@@ -95,11 +104,27 @@
     button.disabled = true; button.textContent = '正在读取…';
     try {
       var workbook = window.XLSX.read(await file.arrayBuffer(), { type: 'array' });
-      var data = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+      var rawData = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+      var normalizeKey = function (key) { return String(key || '').replace(/^\uFEFF/, '').replace(/[\s\u3000]/g, ''); };
+      var aliases = { '账号': '账号', '用户名': '账号', '帐号': '账号', '姓名': '姓名', '员工姓名': '姓名', '工号': '工号', '员工号': '工号', '所属部门': '所属部门', '部门': '所属部门' };
+      var data = rawData.map(function (row) { var normalized = {}; Object.keys(row).forEach(function (key) { var mapped = aliases[normalizeKey(key)]; if (mapped) normalized[mapped] = row[key]; }); return normalized; });
       var required = ['账号', '姓名', '工号', '所属部门'];
-      if (!data.length || required.some(function (key) { return !Object.prototype.hasOwnProperty.call(data[0], key); })) throw new Error('表头必须包含：账号、姓名、工号、所属部门、初始密码。');
-      var validDepartments = ['测试', '技术—前端', '技术—后端', '设计', '产品'];
-      var payloads = data.map(function (row, index) { var payload = { username: String(row['账号']).trim(), full_name: String(row['姓名']).trim(), employee_no: String(row['工号']).trim(), department: String(row['所属部门']).trim() }; payload.password = payload.employee_no; if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + (index + 2) + ' 行账号格式不正确。'); if (!payload.full_name || !payload.employee_no || !validDepartments.includes(payload.department) || payload.password.length < 6) throw new Error('第 ' + (index + 2) + ' 行信息不完整或工号长度不足 6 位。'); return payload; });
+      if (!data.length || required.some(function (key) { return !Object.prototype.hasOwnProperty.call(data[0], key); })) throw new Error('表头必须包含：账号、姓名、工号、所属部门。支持“用户名”“部门”等常用写法。');
+      var departmentAliases = {
+        '测试': '测试',
+        '设计': '设计',
+        '产品': '产品',
+        '技术—前端': '技术—前端',
+        '技术-前端': '技术—前端',
+        '技术前端': '技术—前端',
+        '前端': '技术—前端',
+        '技术—后端': '技术—后端',
+        '技术-后端': '技术—后端',
+        '技术后端': '技术—后端',
+        '后端': '技术—后端'
+      };
+      var value = function (item) { return item == null ? '' : String(item).trim(); };
+      var payloads = data.map(function (row, index) { var line = index + 2; var rawDepartment = value(row['所属部门']).replace(/[\s\u3000]/g, ''); var payload = { username: value(row['账号']), full_name: value(row['姓名']), employee_no: value(row['工号']), department: departmentAliases[rawDepartment] || '' }; payload.password = payload.employee_no; if (!payload.username) throw new Error('第 ' + line + ' 行“账号”为空。'); if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + line + ' 行“账号”格式不正确。'); if (!payload.full_name) throw new Error('第 ' + line + ' 行“姓名”为空。'); if (!payload.employee_no) throw new Error('第 ' + line + ' 行“工号”为空。'); if (payload.password.length < 6) throw new Error('第 ' + line + ' 行工号少于 6 位，不能作为初始密码。'); if (!payload.department) throw new Error('第 ' + line + ' 行部门“' + rawDepartment + '”不合法。可填写：测试、前端、后端、设计、产品。'); return payload; });
       button.textContent = '正在创建…';
       for (var i = 0; i < payloads.length; i += 1) await window.PatchworkAPI.createTeamUser(payloads[i]);
       toast('已成功新增 ' + payloads.length + ' 个普通用户。', 'success'); batchModal.classList.add('hidden'); batchFile.value = ''; document.getElementById('batchFileName').textContent = '未选择文件'; await load();
