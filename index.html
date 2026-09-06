@@ -38,7 +38,7 @@
 
   <main class="dashboard-shell">
     <div class="workspace-heading"><div><p class="eyebrow" id="workspaceEyebrow">TEST GROUP / WORKSPACE</p><h1 id="workspaceTitle">测试组首页</h1><p id="workspaceDescription">测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。</p></div><span id="workspaceRole" class="workspace-role">内部协作空间</span></div>
-    <div class="workspace-breadcrumb"><span>测试</span><b>/</b><strong id="workspaceBreadcrumb">测试组首页</strong><span class="workspace-date">今天 · 内部协作</span></div>
+    <div id="workspaceBreadcrumbWrap" class="workspace-breadcrumb"><a href="index.html">测试</a><b>/</b><strong id="workspaceBreadcrumb">测试组首页</strong><span class="workspace-date">今天 · 内部协作</span></div>
     <div id="configNotice" class="notice hidden" role="status"></div>
 
     <section class="home-services reveal" aria-label="工作入口">
@@ -98,11 +98,11 @@
       </article>
     </section>
 
-    <section class="board-panel department-workspace reveal delay-2">
+    <section class="board-panel legacy-department-board department-workspace reveal delay-2">
       <div class="panel-heading">
         <div>
           <p class="eyebrow">ISSUE REGISTER</p>
-          <h2>Bug 列表</h2>
+          <h2 id="departmentListTitle">Bug 列表</h2>
         </div>
          <div class="panel-actions"><button id="exportBugs" class="button button-ghost button-small" type="button">导出 CSV ↓</button><button id="refreshButton" class="icon-button" type="button" title="刷新数据" aria-label="刷新数据">↻</button></div>
       </div>
@@ -204,6 +204,10 @@
       <div class="login-register">
          <button id="registerFromLogin" class="button button-ghost button-full" type="button">管理员登记分配人员 →</button>
       </div>
+    </section>
+    <section class="department-table-panel department-workspace reveal delay-2">
+      <div class="department-table-toolbar"><label class="cases-search department-search"><span>⌕</span><input id="departmentSearch" type="search" placeholder="搜索问题标题"></label><select id="departmentStatusFilter" class="department-select"><option value="all">状态筛选</option><option value="open">待处理</option><option value="in_progress">处理中</option><option value="resolved">已解决</option></select><select id="departmentImportanceFilter" class="department-select"><option value="all">严重程度筛选</option><option value="heavy">严重</option><option value="medium">一般</option><option value="light">轻微</option></select><button id="exportDepartmentReport" class="department-export-button" type="button">导出报告</button></div>
+      <div class="department-table-card"><table class="department-table"><thead><tr><th>缺陷编号</th><th>问题标题</th><th>提交人</th><th>联系方式</th><th>当前跟进人</th><th>状态</th><th>严重程度</th><th>最后更新时间</th><th>操作</th></tr></thead><tbody id="departmentBugList"></tbody></table><div id="departmentEmpty" class="cases-empty hidden">当前部门暂无缺陷</div></div>
     </section>
   </div>
 

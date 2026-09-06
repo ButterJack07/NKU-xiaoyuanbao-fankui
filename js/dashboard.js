@@ -262,22 +262,42 @@
     var eyebrow = document.getElementById('workspaceEyebrow');
     var role = document.getElementById('workspaceRole');
     var breadcrumb = document.getElementById('workspaceBreadcrumb');
+    var breadcrumbWrap = document.getElementById('workspaceBreadcrumbWrap');
+    var listTitle = document.getElementById('departmentListTitle');
     if (!title || !description) return;
     if (isDepartmentView) {
       title.textContent = departmentFromUrl + '缺陷列表';
-      description.textContent = '查看、分配和跟进本部门负责的测试缺陷。';
+      var departmentDescriptions = {
+        '技术—前端': '仅显示当前归属为技术—前端的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。',
+        '技术—后端': '仅显示当前归属为技术—后端的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。',
+        '设计': '仅显示当前归属为设计的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。',
+        '产品': '仅显示当前归属为产品的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。'
+      };
+      description.textContent = departmentDescriptions[departmentFromUrl] || '查看、分配和跟进本部门负责的测试缺陷。';
       eyebrow.textContent = 'DEPARTMENT / BUG REGISTER';
       role.textContent = departmentFromUrl + '工作台';
       breadcrumb.textContent = departmentFromUrl + '缺陷列表';
+      if (breadcrumbWrap) breadcrumbWrap.classList.remove('hidden');
+      if (listTitle) listTitle.textContent = departmentFromUrl + '缺陷列表';
     } else {
       title.textContent = '测试组首页';
       description.textContent = '测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。';
       eyebrow.textContent = 'TEST GROUP / WORKSPACE';
       role.textContent = '内部协作空间';
       breadcrumb.textContent = '测试组首页';
+      if (breadcrumbWrap) breadcrumbWrap.classList.add('hidden');
+      if (listTitle) listTitle.textContent = 'Bug 列表';
     }
   }
   updateWorkspaceView();
+  ['departmentSearch', 'departmentStatusFilter', 'departmentImportanceFilter'].forEach(function (id) { var node = document.getElementById(id); if (node) node.addEventListener('input', renderDepartmentTable); if (node) node.addEventListener('change', renderDepartmentTable); });
+  document.addEventListener('click', function (event) { var button = event.target.closest('[data-department-bug]'); if (button) openDrawer(button.dataset.departmentBug); });
+  var departmentExport = document.getElementById('exportDepartmentReport');
+  if (departmentExport) departmentExport.addEventListener('click', function () {
+    var rows = Array.from(document.querySelectorAll('#departmentBugList tr')).map(function (row) { return Array.from(row.children).slice(0, 8).map(function (cell) { return cell.textContent.trim(); }); });
+    var csv = '\ufeff缺陷编号,问题标题,提交人,联系方式,当前跟进人,状态,严重程度,最后更新时间\n' + rows.map(function (row) { return row.map(function (value) { return '"' + value.replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'department-bugs.csv'; link.click();
+  });
 
   function renderList() {
     var rows = filteredBugs();
@@ -307,6 +327,29 @@
       });
       bugList.appendChild(article);
     });
+  }
+
+  function renderDepartmentTable() {
+    var table = document.getElementById('departmentBugList');
+    var empty = document.getElementById('departmentEmpty');
+    if (!table || !departmentFromUrl) return;
+    var query = (document.getElementById('departmentSearch').value || '').trim().toLowerCase();
+    var status = document.getElementById('departmentStatusFilter').value;
+    var importance = document.getElementById('departmentImportanceFilter').value;
+    var rows = bugs.filter(function (bug) {
+      return bug.assignee_department === departmentFromUrl &&
+        (status === 'all' || bug.status === status) &&
+        (importance === 'all' || bug.importance === importance) &&
+        (!query || bug.title.toLowerCase().includes(query));
+    });
+    table.innerHTML = rows.map(function (bug) {
+      var currentName = bug.assignee || '—';
+      var isMine = currentProfile && bug.assignee_id === currentProfile.id;
+      var importanceLabel = labels.importance[bug.importance] || bug.importance || '—';
+      var statusLabel = labels.status[bug.status] || bug.status || '—';
+      return '<tr><td>BUG-' + escapeHtml(bug.id.slice(0, 8).toUpperCase()) + '</td><td class="department-title-cell">' + escapeHtml(bug.title) + '</td><td>' + escapeHtml(bug.reporter || '—') + '</td><td><a class="department-link" href="mailto:">联系提交人</a></td><td class="' + (isMine ? 'department-mine' : '') + '">' + escapeHtml(isMine ? currentName + '（我的）' : currentName) + '</td><td>' + escapeHtml(statusLabel) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + escapeHtml(importanceLabel) + '</td><td>' + escapeHtml(formatDate(bug.updated_at || bug.created_at)) + '</td><td><button class="department-link" type="button" data-department-bug="' + escapeHtml(bug.id) + '">查看详情</button></td></tr>';
+    }).join('');
+    empty.classList.toggle('hidden', rows.length !== 0);
   }
 
   function detailBlock(title, value, className) {
@@ -565,6 +608,7 @@
     emptyState.classList.add('hidden');
     try {
       bugs = await window.PatchworkAPI.listBugs();
+      renderDepartmentTable();
       updateStats();
       renderList();
     } catch (error) {
