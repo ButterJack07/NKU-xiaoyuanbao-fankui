@@ -144,6 +144,18 @@
     });
   }
 
+  async function createTeamUser(payload) {
+    if (!window.PATCHWORK_AUTH_TOKEN) throw new Error('登录状态已失效，请重新登录。');
+    var response = await fetch(config.supabaseUrl.replace(/\/$/, '') + '/functions/v1/admin-create-user', {
+      method: 'POST',
+      headers: { apikey: config.supabaseAnonKey, Authorization: 'Bearer ' + window.PATCHWORK_AUTH_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var body = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error('新增用户失败（HTTP ' + response.status + '）： ' + (body.error || body.message || 'Edge Function 未返回具体原因。'));
+    return body;
+  }
+
   window.PatchworkAPI = {
     isConfigured: isConfigured,
     uploadFile: uploadFile,
@@ -157,6 +169,7 @@
     createTestCase: createTestCase,
     updateTestCase: updateTestCase,
     listNotifications: listNotifications,
-    createAssignmentEvent: createAssignmentEvent
+    createAssignmentEvent: createAssignmentEvent,
+    createTeamUser: createTeamUser
   };
 })();

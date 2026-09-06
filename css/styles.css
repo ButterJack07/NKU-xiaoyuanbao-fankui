@@ -206,6 +206,10 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .user-status.enabled { color: #2d815d; }
 .user-status.disabled { color: #a3483c; }
 .user-edit-link { padding: 0; border: 0; color: #171717; background: transparent; cursor: pointer; font-size: 12px; }
+.user-modal { width: min(460px, calc(100% - 30px)); max-height: calc(100vh - 30px); overflow: auto; border: 1px solid #171717; border-radius: 18px; background: #fff; }
+.user-form { padding: 24px 28px 28px; }
+.user-form .field { margin-bottom: 16px; }
+.user-form .case-action-button { margin-top: 5px; }
 @media (max-width: 700px) {
   .user-actions { flex-wrap: wrap; }
   .user-actions .cases-search { min-width: 100%; }
