@@ -10,6 +10,10 @@ create table if not exists public.profiles (
   department text not null check (department in ('管理', '测试', '技术—前端', '技术—后端', '设计', '产品')),
   role text not null default 'member' check (role in ('member', 'leader', 'admin')),
   active boolean not null default true,
+  qq text not null default '',
+  wechat text not null default '',
+  phone text not null default '',
+  contact_time text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -152,6 +152,38 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .access-denied h1 { margin: 0 0 12px; color: #19212b; font: 700 28px var(--body); }
 .access-denied p { margin: 0; color: #969d99; font-size: 13px; }
 .access-denied-countdown { margin-top: 18px !important; color: #ed5a52 !important; font-weight: 700; }
+.bug-detail-shell { padding-top: 28px; }
+.detail-page-heading { padding: 28px 0 25px; }
+.detail-code { margin: 0 0 8px; color: #ed5a52; font-size: 12px; font-weight: 700; }
+.detail-page-heading h1 { margin: 0 0 18px; color: #19212b; font: 700 32px var(--body); }
+.detail-meta { display: flex; flex-wrap: wrap; gap: 24px; color: #969d99; font-size: 12px; }
+.detail-meta b { color: #303833; font-weight: 600; }
+.bug-detail-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(330px, .85fr); gap: 20px; }
+.detail-card { padding: 28px; border: 1px solid #171717; border-radius: 18px; background: #fff; }
+.detail-card h2 { margin: 0 0 24px; color: #19212b; font: 700 22px var(--body); }
+.detail-fields { margin: 0; }
+.detail-fields > div { padding: 15px 0; border-bottom: 1px solid #eee9df; }
+.detail-fields dt { margin-bottom: 7px; color: #969d99; font-size: 11px; }
+.detail-fields dd { margin: 0; color: #202822; white-space: pre-line; font-size: 13px; line-height: 1.75; }
+.detail-attachment-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 5px; }
+.detail-attachment-download { color: #ed5a52; font-size: 12px; font-weight: 700; text-decoration: none; }
+.detail-attachment-download:hover { text-decoration: underline; }
+.permission-note { margin: 22px 0; padding: 12px 14px; color: #8d6540; border-radius: 9px; background: #fff7e9; font-size: 12px; line-height: 1.7; }
+.detail-actions { display: grid; gap: 10px; }
+.detail-actions button { width: 100%; }
+.detail-actions button:disabled { color: #aaa; background: #eee; border-color: #ddd; cursor: not-allowed; }
+.detail-muted-button { min-height: 44px; border: 1px solid #bbb; border-radius: 9px; color: #999; background: #f1f1f1; cursor: pointer; }
+.detail-actions .detail-muted-button:not(:disabled) { min-height: 44px; padding: 0 20px; border: 0; border-radius: 9px; border-color: transparent; color: #fff; background: #ed5a52; cursor: pointer; font-size: 13px; font-weight: 700; }
+.detail-actions .detail-muted-button:disabled { color: #aaa; background: #eee; border-color: #ddd; cursor: not-allowed; }
+.detail-action-panel { margin-top: 18px; padding-top: 18px; border-top: 1px solid #eee9df; }
+.detail-action-panel textarea { width: 100%; padding: 12px; border: 1px solid #171717; border-radius: 9px; resize: vertical; }
+.detail-action-panel > div { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.inline-note-input { width: 100%; min-height: 100px; padding: 12px; border: 1px solid #171717; border-radius: 9px; resize: vertical; font: inherit; line-height: 1.7; }
+.inline-note-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.assignee-form { padding: 24px 28px 28px; }
+.assignee-form .field select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #171717; border-radius: 9px; background: #fff; }
+.assignee-form .field textarea { width: 100%; padding: 12px; border: 1px solid #171717; border-radius: 9px; resize: vertical; }
+@media (max-width: 800px) { .bug-detail-grid { grid-template-columns: 1fr; } .detail-meta { gap: 10px 18px; } }
 .department-case-shell > .cases-topbar { display: none; }
 .workspace-heading.hidden { display: none !important; }
 .department-case-table-card { min-height: 420px; }
@@ -215,6 +247,8 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .bug-report-actions { align-items: center; }
 .bug-report-actions .cases-search { flex: 1 1 320px; }
 .bug-report-actions .case-action-button { white-space: nowrap; }
+.my-filter { height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #171717; border-radius: 9px; color: #171717; background: #fff; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.my-filter input { width: 15px; height: 15px; accent-color: #ed5a52; cursor: pointer; }
 .bug-report-table-card { min-height: 420px; }
 .bug-updated-column { min-width: 160px; width: 18%; }
 .department-only-table th, .department-only-table td { white-space: nowrap; }
@@ -301,6 +335,7 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .user-form .field { margin-bottom: 16px; }
 .user-form .case-action-button { margin-top: 5px; }
 .user-modal-identity, .user-modal-help { margin: 7px 0 0; color: #969d99; font-size: 12px; }
+.profile-modal .user-form { padding-top: 18px; }
 .user-modal-help { line-height: 1.7; }
 .user-form .field > span i { color: #ed5a52; font-style: normal; }
 .edit-user-modal .user-form { padding-top: 8px; }

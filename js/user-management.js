@@ -56,6 +56,7 @@
     try {
       var payload = Object.fromEntries(new FormData(form).entries());
       payload.password = payload.employee_no;
+      if (!/^\d{4,10}$/.test(payload.employee_no)) throw new Error('工号必须为 4-10 位数字。');
       if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('账号只能使用 3-40 位字母、数字、下划线或短横线。');
       await window.PatchworkAPI.createTeamUser(payload);
       toast('普通用户创建成功。', 'success'); form.reset(); modal.classList.add('hidden'); await load();
@@ -124,7 +125,7 @@
         '后端': '技术—后端'
       };
       var value = function (item) { return item == null ? '' : String(item).trim(); };
-      var payloads = data.map(function (row, index) { var line = index + 2; var rawDepartment = value(row['所属部门']).replace(/[\s\u3000]/g, ''); var payload = { username: value(row['账号']), full_name: value(row['姓名']), employee_no: value(row['工号']), department: departmentAliases[rawDepartment] || '' }; payload.password = payload.employee_no; if (!payload.username) throw new Error('第 ' + line + ' 行“账号”为空。'); if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + line + ' 行“账号”格式不正确。'); if (!payload.full_name) throw new Error('第 ' + line + ' 行“姓名”为空。'); if (!payload.employee_no) throw new Error('第 ' + line + ' 行“工号”为空。'); if (payload.password.length < 6) throw new Error('第 ' + line + ' 行工号少于 6 位，不能作为初始密码。'); if (!payload.department) throw new Error('第 ' + line + ' 行部门“' + rawDepartment + '”不合法。可填写：测试、前端、后端、设计、产品。'); return payload; });
+      var payloads = data.map(function (row, index) { var line = index + 2; var rawDepartment = value(row['所属部门']).replace(/[\s\u3000]/g, ''); var payload = { username: value(row['账号']), full_name: value(row['姓名']), employee_no: value(row['工号']), department: departmentAliases[rawDepartment] || '' }; payload.password = payload.employee_no; if (!payload.username) throw new Error('第 ' + line + ' 行“账号”为空。'); if (!/^[A-Za-z0-9_-]{3,40}$/.test(payload.username)) throw new Error('第 ' + line + ' 行“账号”格式不正确。'); if (!payload.full_name) throw new Error('第 ' + line + ' 行“姓名”为空。'); if (!/^\d{4,10}$/.test(payload.employee_no)) throw new Error('第 ' + line + ' 行工号必须为 4-10 位数字。'); if (!payload.department) throw new Error('第 ' + line + ' 行部门“' + rawDepartment + '”不合法。可填写：测试、前端、后端、设计、产品。'); return payload; });
       button.textContent = '正在创建…';
       for (var i = 0; i < payloads.length; i += 1) await window.PatchworkAPI.createTeamUser(payloads[i]);
       toast('已成功新增 ' + payloads.length + ' 个普通用户。', 'success'); batchModal.classList.add('hidden'); batchFile.value = ''; document.getElementById('batchFileName').textContent = '未选择文件'; await load();

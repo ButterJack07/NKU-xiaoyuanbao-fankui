@@ -27,7 +27,7 @@
 
   async function verifyProfile(session) {
     if (!session) return null;
-    var result = await client.from('profiles').select('id,username,full_name,employee_no,department,role,active').eq('id', session.user.id).maybeSingle();
+    var result = await client.from('profiles').select('id,username,full_name,employee_no,department,role,active,qq,wechat,phone,contact_time').eq('id', session.user.id).maybeSingle();
     if (result.error) throw result.error;
     if (!result.data || !result.data.active) {
       window.PATCHWORK_PROFILE = null;

@@ -8,7 +8,9 @@
     var query = document.getElementById('bugReportSearch').value.trim().toLowerCase();
     var department = departmentFromUrl || document.getElementById('bugReportDepartment').value;
     var status = document.getElementById('bugReportStatus').value;
-    var visible = rows.filter(function (bug) { return (!query || String(bug.title || '').toLowerCase().includes(query)) && (department === 'all' || bug.assignee_department === department) && (status === 'all' || bug.status === status); });
+    var myOnly = document.getElementById('myBugFilter').checked;
+    var profile = window.PATCHWORK_PROFILE;
+    var visible = rows.filter(function (bug) { var mine = profile && (bug.submitter_id === profile.id || bug.assignee_id === profile.id || bug.follow_up_id === profile.id); return (!query || String(bug.title || '').toLowerCase().includes(query)) && (department === 'all' || bug.assignee_department === department) && (status === 'all' || bug.status === status) && (!myOnly || mine); });
     list.innerHTML = visible.map(function (bug) { var importance = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—'; var state = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—'; var code = bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001'; var departmentCell = departmentFromUrl ? '' : '<td>' + esc(bug.assignee_department || '—') + '</td>'; return '<tr><td>' + code + '</td><td class="case-file-name">' + esc(bug.title) + '</td><td>' + esc(bug.reporter || '—') + '</td>' + departmentCell + '<td>' + esc(bug.assignee || '—') + '</td><td>' + esc(state) + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + esc(importance) + '</td><td>' + formatDate(bug.updated_at || bug.created_at) + '</td><td><button class="case-download-link" type="button" data-bug-id="' + esc(bug.id) + '">查看详情</button></td></tr>'; }).join('');
     document.getElementById('bugReportEmpty').classList.toggle('hidden', visible.length !== 0);
   }
@@ -51,11 +53,11 @@
     document.title = '校缘宝内测管理网站 · ' + departmentFromUrl + '缺陷列表';
   }
   async function load() { try { rows = await window.PatchworkAPI.listBugs(); render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
-  ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
+  ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus', 'myBugFilter'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
   var newBugReport = document.getElementById('newBugReport');
   if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = 'submit-bug.html'; });
   document.getElementById('exportBugReports').addEventListener('click', exportReports);
-  list.addEventListener('click', function (event) { var button = event.target.closest('[data-bug-id]'); if (button) window.location.href = 'submit-bug.html?bug=' + encodeURIComponent(button.dataset.bugId); });
+  list.addEventListener('click', function (event) { var button = event.target.closest('[data-bug-id]'); if (button) window.location.href = 'bug-detail.html?bug=' + encodeURIComponent(button.dataset.bugId) + (departmentFromUrl ? '&department=' + encodeURIComponent(departmentFromUrl) : ''); });
   if (departmentFromUrl && newBugReport) newBugReport.classList.add('hidden');
   if (!departmentFromUrl && !isDepartmentPage) document.getElementById('exportBugReports').classList.add('hidden');
   setupDepartmentView();

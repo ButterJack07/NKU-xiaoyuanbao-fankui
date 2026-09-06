@@ -121,7 +121,7 @@
   }
 
   async function listProfiles() {
-    return request('/rest/v1/profiles?select=id,username,full_name', { method: 'GET', headers: headers() });
+    return request('/rest/v1/profiles?select=id,username,full_name,department,role,active&active=eq.true', { method: 'GET', headers: headers() });
   }
 
   async function createTestCase(payload) {

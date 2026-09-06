@@ -28,8 +28,12 @@ Deno.serve(async (request) => {
     const password = String(body.password || employeeNo);
     if (!/^[A-Za-z0-9_-]{3,40}$/.test(username)) throw new Error('账号只能使用 3-40 位字母、数字、下划线或短横线。');
     if (!fullName || !employeeNo || !['测试', '技术—前端', '技术—后端', '设计', '产品'].includes(department)) throw new Error('请完整填写用户信息。');
-    if (password.length < 6) throw new Error('初始密码至少需要 6 位。');
+    if (!/^\d{4,10}$/.test(employeeNo)) throw new Error('工号必须为 4-10 位数字。');
     const email = username.toLowerCase() + '@' + (Deno.env.get('AUTH_EMAIL_DOMAIN') || 'team.xiaoyuanbao.internal');
+    const { data: existingUsername } = await adminClient.from('profiles').select('id').eq('username', username).maybeSingle();
+    if (existingUsername) throw new Error('账号已存在，请换一个账号。');
+    const { data: existingEmployee } = await adminClient.from('profiles').select('id').eq('employee_no', employeeNo).maybeSingle();
+    if (existingEmployee) throw new Error('工号已存在，请检查工号后重试。');
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({ email, password, email_confirm: true });
     if (createError || !created.user) throw new Error(createError?.message || 'Auth 用户创建失败。');
     const { error: insertError } = await adminClient.from('profiles').insert({ id: created.user.id, username, full_name: fullName, employee_no: employeeNo, department, role: 'member', active: true });
