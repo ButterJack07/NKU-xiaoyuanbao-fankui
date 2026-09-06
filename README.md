@@ -18,6 +18,16 @@ GitHub Pages 发布后可能需要几分钟完成部署。如果页面暂时显�
 
 ## 功能说明
 
+### 当前版本新增
+
+- Supabase Auth 团队登录：用户名映射为内部邮箱，密码使用工号；账号需要由管理员在 Supabase Auth 中创建，并在 `profiles` 表登记。
+- 固定部门：测试、技术—前端、技术—后端、设计、产品；支持超级管理员角色。
+- 测试用例中心：提交结构化用例，系统自动生成编号，支持汇总列表和 CSV 导出。
+- 缺陷归属部门筛选、转组备注、责任人字段和 CSV 导出。
+- `assignment_events` 和 `notifications` 数据表用于后续转组历史与提醒扩展。
+
+执行新版 `supabase.sql` 后，必须在 Supabase Authentication 中创建团队账号，并插入对应的 `profiles` 记录。例如用户名为 `zhangsan` 时，登录邮箱使用 `zhangsan@team.xiaoyuanbao.internal`，密码填写工号。超级管理员的 `role` 设置为 `admin`，组长设置为 `leader`。
+
 ### Bug 提交端
 
 - 填写标题、反馈人、功能模块和运行环境。

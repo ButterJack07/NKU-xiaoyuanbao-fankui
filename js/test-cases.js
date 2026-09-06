@@ -1,0 +1,13 @@
+(function () {
+  'use strict';
+  var rows = [], form = document.getElementById('caseForm'), list = document.getElementById('caseList');
+  function toast(text, type) { var node = document.getElementById('toast'); node.textContent = text; node.className = 'toast show ' + (type || ''); setTimeout(function () { node.className = 'toast'; }, 3500); }
+  function esc(value) { return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function render() { list.innerHTML = rows.map(function (row) { return '<article class="case-row"><div><small>TC-' + String(row.case_no).padStart(5, '0') + ' · ' + new Date(row.created_at).toLocaleDateString('zh-CN') + '</small><h3>' + esc(row.title) + '</h3><p>' + esc(row.module) + ' · ' + esc(row.steps) + '</p></div><span class="tag case-status">' + esc(row.status) + '</span></article>'; }).join('') || '<div class="state-box">暂无测试用例</div>'; }
+  function visibleRows() { var query = (document.getElementById('caseSearch').value || '').trim().toLowerCase(); return rows.filter(function (row) { return !query || [row.title, row.module, row.steps, row.status].join(' ').toLowerCase().includes(query); }); }
+  async function load() { try { rows = await window.PatchworkAPI.listTestCases(); render(); } catch (error) { toast(error.message, 'error'); } }
+  form.addEventListener('submit', async function (event) { event.preventDefault(); var button = form.querySelector('button'); button.disabled = true; try { var data = Object.fromEntries(new FormData(form).entries()); var session = (await window.PATCHWORK_AUTH.getSession()).data.session; data.submitter_id = session.user.id; rows.unshift((await window.PatchworkAPI.createTestCase(data))[0]); form.reset(); render(); toast('测试用例已提交。', 'success'); } catch (error) { toast(error.message, 'error'); } finally { button.disabled = false; } });
+  document.getElementById('exportCases').addEventListener('click', function () { var csv = '\ufeff编号,标题,模块,前置条件,步骤,预期结果,优先级,状态\n' + rows.map(function (r) { return [r.case_no, r.title, r.module, r.preconditions, r.steps, r.expected_result, r.priority, r.status].map(function (v) { return '"' + String(v || '').replace(/"/g, '""') + '"'; }).join(','); }).join('\n'); var link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'test-cases.csv'; link.click(); });
+  document.getElementById('caseSearch').addEventListener('input', function () { var original = rows; rows = visibleRows(); render(); rows = original; });
+  window.PATCHWORK_READY.then(load);
+})();

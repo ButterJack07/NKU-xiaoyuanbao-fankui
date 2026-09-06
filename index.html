@@ -18,8 +18,18 @@
       <span><strong>校园宝</strong><small>BUG 反馈平台</small></span>
     </a>
     <nav class="topnav" aria-label="主导航">
-      <a class="active" href="index.html">查看看板</a>
-      <a href="submit.html">反馈问题</a>
+       <span class="nav-section-label">工作空间</span>
+       <a href="index.html"><span class="nav-icon">⌂</span>测试组首页</a>
+       <a class="active" href="index.html">缺陷看板</a>
+       <a href="test-cases.html">测试用例</a>
+       <a href="submit.html">反馈问题</a>
+       <span class="nav-section-label nav-section-spaced">部门视图</span>
+       <a href="index.html?department=测试"><span class="nav-dot dot-test"></span>测试</a>
+       <a href="index.html?department=技术—前端"><span class="nav-dot dot-front"></span>技术—前端</a>
+       <a href="index.html?department=技术—后端"><span class="nav-dot dot-back"></span>技术—后端</a>
+       <a href="index.html?department=设计"><span class="nav-dot dot-design"></span>设计</a>
+       <a href="index.html?department=产品"><span class="nav-dot dot-product"></span>产品</a>
+       <a class="nav-notice" href="#myTasksPanel"><span class="nav-icon">!</span>公告信息</a>
     </nav>
     <div class="top-actions">
       <button id="openLoginModal" class="identity-button" type="button">
@@ -27,10 +37,30 @@
         <span><small id="identityLabel">开发人员</small><strong id="identityName">选择登录</strong></span>
       </button>
     </div>
+    <button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">测试组 · 登录中</small></span></button>
   </header>
 
   <main class="dashboard-shell">
+    <div class="workspace-heading"><div><p class="eyebrow">TEST GROUP / WORKSPACE</p><h1>测试组首页</h1><p>测试组所有成员均可查看测试用例与缺陷报告，两条业务线仍相对独立。</p></div><span class="workspace-role">内部协作空间</span></div>
+    <div class="workspace-breadcrumb"><span>测试</span><b>/</b><strong>测试组首页</strong><span class="workspace-date">今天 · 内部协作</span></div>
     <div id="configNotice" class="notice hidden" role="status"></div>
+
+    <section class="home-services reveal" aria-label="工作入口">
+      <a class="service-card service-cases" href="test-cases.html">
+        <span class="service-kicker">01 / TEST CASES</span>
+        <span class="service-icon">✓</span>
+        <h2>测试用例</h2>
+        <p>上传本地完成的测试用例，系统统一编号、收集、归档，并支持下载与导出。</p>
+        <span class="service-link">查看测试用例 <b>→</b></span>
+      </a>
+      <a class="service-card service-bugs" href="submit.html">
+        <span class="service-kicker">02 / BUG REPORTS</span>
+        <span class="service-icon">!</span>
+        <h2>软件缺陷报告</h2>
+        <p>在线填写缺陷报告，选择归属部门后由系统自动分发到对应部门。</p>
+        <span class="service-link">新建缺陷报告 <b>→</b></span>
+      </a>
+    </section>
 
     <section id="myTasksPanel" class="my-tasks-panel reveal delay-1">
       <div class="my-tasks-heading">
@@ -78,7 +108,7 @@
           <p class="eyebrow">ISSUE REGISTER</p>
           <h2>Bug 列表</h2>
         </div>
-        <button id="refreshButton" class="icon-button" type="button" title="刷新数据" aria-label="刷新数据">↻</button>
+         <div class="panel-actions"><button id="exportBugs" class="button button-ghost button-small" type="button">导出 CSV ↓</button><button id="refreshButton" class="icon-button" type="button" title="刷新数据" aria-label="刷新数据">↻</button></div>
       </div>
 
       <div class="toolbar">
@@ -98,6 +128,7 @@
           <option value="medium">中</option>
           <option value="light">轻</option>
         </select>
+        <select id="departmentFilter" class="select-control" aria-label="部门筛选"><option value="all">全部部门</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option><option value="测试">测试</option></select>
       </div>
 
       <div id="loadingState" class="state-box">
@@ -220,7 +251,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/config.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <script src="js/config.js"></script>
+   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

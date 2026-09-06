@@ -15,12 +15,13 @@
   function headers(extra) {
     return Object.assign({
       apikey: config.supabaseAnonKey,
-      Authorization: 'Bearer ' + config.supabaseAnonKey,
+      Authorization: 'Bearer ' + (window.PATCHWORK_AUTH_TOKEN || config.supabaseAnonKey),
       'Content-Type': 'application/json'
     }, extra || {});
   }
 
   async function request(path, options) {
+    if (window.PATCHWORK_READY) await window.PATCHWORK_READY;
     if (!isConfigured()) {
       throw new Error('请先在 js/config.js 中配置 Supabase URL 和公开 Key。');
     }
@@ -83,7 +84,7 @@
   }
 
   async function listBugs() {
-    var fields = 'id,title,description,reporter,module,environment,importance,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at';
+    var fields = 'id,title,description,reporter,module,environment,importance,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at,submitter_id,transfer_from,transfer_note,follow_up_id,assigned_at';
     return request('/rest/v1/' + config.tableName + '?select=' + fields + '&order=created_at.desc', {
       method: 'GET',
       headers: headers()
@@ -106,6 +107,33 @@
     });
   }
 
+  async function getProfile() {
+    var result = await window.PATCHWORK_SUPABASE.auth.getUser();
+    var user = result.data && result.data.user;
+    if (!user) return [];
+    return request('/rest/v1/profiles?select=*&id=eq.' + encodeURIComponent(user.id), { method: 'GET', headers: headers() });
+  }
+
+  async function listTestCases() {
+    return request('/rest/v1/test_cases?select=*&order=created_at.desc', { method: 'GET', headers: headers() });
+  }
+
+  async function createTestCase(payload) {
+    return request('/rest/v1/test_cases', { method: 'POST', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(payload) });
+  }
+
+  async function updateTestCase(id, patch) {
+    return request('/rest/v1/test_cases?id=eq.' + encodeURIComponent(id), { method: 'PATCH', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(patch) });
+  }
+
+  async function listNotifications() {
+    return request('/rest/v1/notifications?select=*&is_read=eq.false&order=created_at.desc', { method: 'GET', headers: headers() });
+  }
+
+  async function createAssignmentEvent(payload) {
+    return request('/rest/v1/assignment_events', { method: 'POST', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(payload) });
+  }
+
   async function createDeveloper(payload) {
     return request('/rest/v1/developers', {
       method: 'POST',
@@ -122,5 +150,11 @@
     updateBug: updateBug,
     listDevelopers: listDevelopers,
     createDeveloper: createDeveloper
+    ,getProfile: getProfile,
+    listTestCases: listTestCases,
+    createTestCase: createTestCase,
+    updateTestCase: updateTestCase,
+    listNotifications: listNotifications,
+    createAssignmentEvent: createAssignmentEvent
   };
 })();

@@ -5,6 +5,7 @@
   var developers = [];
   var currentDeveloper = null;
   var currentStatus = 'all';
+  var currentDepartment = 'all';
   var currentBugId = null;
   var previewImages = [];
   var previewIndex = 0;
@@ -84,9 +85,10 @@
     showToast('已以 ' + developer.name + ' 的身份登录。', 'success');
   }
 
-  function logoutDeveloper() {
+  async function logoutDeveloper() {
     currentDeveloper = null;
     localStorage.removeItem(identityStorageKey);
+    if (window.PATCHWORK_AUTH) await window.PATCHWORK_AUTH.signOut();
     renderIdentity();
     renderMyTasks();
     closeLoginModal();
@@ -105,6 +107,14 @@
       avatar.textContent = '?';
       label.textContent = '开发人员';
       name.textContent = '选择登录';
+    }
+    var topAvatar = document.getElementById('topUserAvatar');
+    var topName = document.getElementById('topUserName');
+    var topDepartment = document.getElementById('topUserDepartment');
+    if (topAvatar && topName && topDepartment) {
+      topAvatar.textContent = currentDeveloper ? currentDeveloper.name.slice(0, 1) : '?';
+      topName.textContent = currentDeveloper ? currentDeveloper.name : '当前成员';
+      topDepartment.textContent = currentDeveloper ? currentDeveloper.department + ' · 已登录' : '测试组 · 未登录';
     }
     renderLoginDirectory();
   }
@@ -215,9 +225,17 @@
     return bugs.filter(function (bug) {
       var matchesStatus = currentStatus === 'all' || bug.status === currentStatus;
       var matchesImportance = importance === 'all' || bug.importance === importance;
+      var matchesDepartment = currentDepartment === 'all' || bug.assignee_department === currentDepartment;
       var haystack = [bug.title, bug.module, bug.reporter, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
-      return matchesStatus && matchesImportance && (!query || haystack.includes(query));
+      return matchesStatus && matchesImportance && matchesDepartment && (!query || haystack.includes(query));
     });
+  }
+
+  var departmentFromUrl = new URLSearchParams(window.location.search).get('department');
+  if (departmentFromUrl) {
+    currentDepartment = departmentFromUrl;
+    var departmentFilter = document.getElementById('departmentFilter');
+    if (departmentFilter) departmentFilter.value = departmentFromUrl;
   }
 
   function renderList() {
@@ -373,7 +391,7 @@
 
     document.getElementById('drawerContent').innerHTML =
       '<div class="detail-badges"><span class="tag importance-tag importance-' + escapeHtml(bug.importance) + '">重要程度 · ' + escapeHtml(labels.importance[bug.importance]) + '</span><span class="status-pill status-' + escapeHtml(bug.status) + '"><i></i>' + escapeHtml(labels.status[bug.status]) + '</span></div>' +
-      '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
+       '<dl class="detail-grid"><div><dt>反馈人</dt><dd>' + escapeHtml(bug.reporter) + '</dd></div><div><dt>模块</dt><dd>' + escapeHtml(bug.module) + '</dd></div><div><dt>环境</dt><dd>' + escapeHtml(bug.environment || '—') + '</dd></div></dl>' +
       detailBlock('问题描述', bug.description) + detailBlock('复现步骤', bug.repro_steps, 'numbered-text') +
       detailBlock('预期结果', bug.expected_result) + detailBlock('实际结果', bug.actual_result) +
       attachments +
@@ -381,7 +399,8 @@
         '<form id="fixForm">' +
           '<label class="field field-full"><span>处理方案</span><textarea name="fix_plan" rows="5" maxlength="3000" placeholder="填写问题原因、修改方案和验证方式…">' + escapeHtml(bug.fix_plan || '') + '</textarea></label>' +
           '<div class="assignment-box"><div class="assignment-heading"><strong>快速分配</strong><small>先选负责部门，再从该部门选择具体人员</small></div>' +
-            '<div class="field-row"><label class="field"><span>负责部门</span><select id="assigneeDepartment" name="assignee_department">' + departmentOptions + '</select></label><label class="field"><span>负责人员</span><select id="assigneeDeveloper" name="assignee_id">' + developerOptions + '</select></label></div>' +
+           '<div class="field-row"><label class="field"><span>负责部门</span><select id="assigneeDepartment" name="assignee_department">' + departmentOptions + '</select></label><label class="field"><span>负责人员</span><select id="assigneeDeveloper" name="assignee_id">' + developerOptions + '</select></label></div>' +
+             '<label class="field field-full"><span>转组 / 跟进备注</span><textarea name="transfer_note" rows="3" maxlength="1000" placeholder="说明移交原因、当前处理重点或给接收组的提醒…">' + escapeHtml(bug.transfer_note || '') + '</textarea></label>' +
             '<p id="assignmentHint" class="assignment-hint"></p>' +
           '</div>' +
           '<label class="field field-full"><span>计划完成日</span><input name="target_date" type="date" value="' + escapeHtml(bug.target_date || '') + '"></label>' +
@@ -470,7 +489,8 @@
       fix_plan: formData.get('fix_plan').trim(),
       assignee: assignee,
       assignee_department: department,
-      assignee_id: developer ? developer.id : (keepLegacyAssignment ? current.assignee_id : null),
+       assignee_id: developer ? developer.id : (keepLegacyAssignment ? current.assignee_id : null),
+       transfer_note: formData.get('transfer_note').trim(),
       target_date: formData.get('target_date') || null,
       status: status,
       resolved_at: resolved ? (current.resolved_at || new Date().toISOString()) : null,
@@ -483,6 +503,10 @@
       var rows = await window.PatchworkAPI.updateBug(currentBugId, patch);
       var updated = rows[0];
       bugs = bugs.map(function (bug) { return bug.id === updated.id ? updated : bug; });
+      if (department !== current.assignee_department) {
+        var session = window.PATCHWORK_AUTH && (await window.PATCHWORK_AUTH.getSession()).data.session;
+        if (session) await window.PatchworkAPI.createAssignmentEvent({ bug_id: current.id, from_department: current.assignee_department || '', to_department: department || '', from_user_id: current.follow_up_id || null, to_user_id: developer ? developer.id : null, note: patch.transfer_note, created_by: session.user.id });
+      }
       updateStats();
       renderList();
       renderDrawer(updated);
@@ -577,9 +601,15 @@
   });
   document.getElementById('searchInput').addEventListener('input', renderList);
   document.getElementById('importanceFilter').addEventListener('change', renderList);
+  document.getElementById('departmentFilter').addEventListener('change', function (event) { currentDepartment = event.target.value; renderList(); });
   document.getElementById('loginSearchInput').addEventListener('input', renderLoginDirectory);
   document.getElementById('loginDepartmentFilter').addEventListener('change', renderLoginDirectory);
   document.getElementById('refreshButton').addEventListener('click', loadBugs);
+  document.getElementById('exportBugs').addEventListener('click', function () {
+    var headers = ['编号', '标题', '反馈人', '模块', '部门', '负责人', '状态', '重要程度', '描述', '修复计划'];
+    var csv = '\ufeff' + headers.join(',') + '\n' + filteredBugs().map(function (bug) { return [bug.id, bug.title, bug.reporter, bug.module, bug.assignee_department, bug.assignee, labels.status[bug.status], labels.importance[bug.importance], bug.description, bug.fix_plan].map(function (value) { return '"' + String(value || '').replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'bug-reports.csv'; link.click();
+  });
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
   document.getElementById('closeImagePreview').addEventListener('click', closeImagePreview);
   document.getElementById('previousPreviewImage').addEventListener('click', function () { movePreview(-1); });
@@ -597,6 +627,8 @@
     if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
   });
   document.getElementById('openLoginModal').addEventListener('click', openLoginModal);
+  var topUserCard = document.getElementById('topUserCard');
+  if (topUserCard) topUserCard.addEventListener('click', openLoginModal);
   document.getElementById('loginFromTasks').addEventListener('click', openLoginModal);
   document.getElementById('closeLoginModal').addEventListener('click', closeLoginModal);
   document.getElementById('loginModal').addEventListener('click', function (event) { if (event.target === event.currentTarget) closeLoginModal(); });

@@ -111,8 +111,11 @@
       submitButton.querySelector('span').textContent = '正在写入数据库…';
       var data = Object.fromEntries(new FormData(form).entries());
       delete data.attachments;
-      data.attachment_urls = attachmentUrls;
-      data.status = 'open';
+       data.attachment_urls = attachmentUrls;
+       data.status = 'open';
+       data.assignee = '';
+       var session = (await window.PATCHWORK_AUTH.getSession()).data.session;
+       data.submitter_id = session.user.id;
       var rows = await window.PatchworkAPI.createBug(data);
       var bug = rows && rows[0];
       document.getElementById('successCode').textContent = bug ? '#' + bug.id.slice(0, 8).toUpperCase() : '已创建';

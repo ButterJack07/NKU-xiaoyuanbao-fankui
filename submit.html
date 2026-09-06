@@ -18,12 +18,21 @@
       <span><strong>校园宝</strong><small>BUG 反馈平台</small></span>
     </a>
     <nav class="topnav" aria-label="主导航">
-      <a href="index.html">查看看板</a>
-      <a class="active" href="submit.html">反馈问题</a>
-    </nav>
+       <span class="nav-section-label">工作空间</span>
+       <a href="index.html"><span class="nav-icon">⌂</span>测试组首页</a>
+       <a href="index.html">缺陷看板</a>
+       <a href="test-cases.html">测试用例</a>
+       <a class="active" href="submit.html">反馈问题</a>
+       <span class="nav-section-label nav-section-spaced">部门视图</span>
+       <a href="index.html?department=测试">测试</a><a href="index.html?department=技术—前端">技术—前端</a><a href="index.html?department=技术—后端">技术—后端</a><a href="index.html?department=设计">设计</a><a href="index.html?department=产品">产品</a>
+       <a class="nav-notice" href="index.html#myTasksPanel"><span class="nav-icon">!</span>公告信息</a>
+       </nav>
+     <div class="top-user-card"><span class="top-user-avatar">张</span><span><strong>当前成员</strong><small>测试组 · 已登录</small></span></div>
   </header>
 
-  <main class="submit-shell">
+   <main class="submit-shell">
+     <div class="workspace-heading submit-heading"><div><p class="eyebrow">TEST GROUP / REPORT</p><h1>新建软件缺陷报告</h1><p>提交时选择归属部门，系统会自动生成编号并分发至对应团队。</p></div></div>
+     <div class="workspace-breadcrumb"><span>测试</span><b>/</b><strong>新建软件缺陷报告</strong></div>
     <section class="submit-intro reveal">
       <p class="eyebrow">REPORT AN ISSUE</p>
       <h1>发现问题？<br><em>把线索交给我们。</em></h1>
@@ -54,7 +63,7 @@
               <span>反馈人 <i>*</i></span>
               <input name="reporter" type="text" maxlength="40" required placeholder="你的姓名或花名">
             </label>
-            <div class="field-row">
+             <div class="field-row">
               <label class="field">
                 <span>功能模块 <i>*</i></span>
                 <input name="module" type="text" maxlength="60" required placeholder="例如：登录模块">
@@ -66,8 +75,18 @@
                   <option value="light">轻</option>
                   <option value="heavy">重</option>
                 </select>
-              </label>
-            </div>
+               </label>
+             </div>
+             <label class="field field-full">
+               <span>归属部门 <i>*</i></span>
+               <select name="assignee_department" required>
+                 <option value="">请选择接收部门</option>
+                 <option value="技术—前端">技术—前端：页面交互、前端展示与客户端问题</option>
+                 <option value="技术—后端">技术—后端：接口、数据服务与权限问题</option>
+                 <option value="设计">设计：视觉规范、资源和交互体验问题</option>
+                 <option value="产品">产品：需求、流程和业务规则问题</option>
+               </select>
+             </label>
           </div>
         </div>
 
@@ -144,7 +163,9 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/config.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <script src="js/config.js"></script>
+   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script src="js/submit.js"></script>
 </body>
