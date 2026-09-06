@@ -233,7 +233,12 @@ drop policy if exists "team create assignment events" on public.assignment_event
 drop policy if exists "read own notifications" on public.notifications;
 drop policy if exists "update own notifications" on public.notifications;
 create policy "team read profiles" on public.profiles for select to authenticated using (true);
-create policy "admin manage profiles" on public.profiles for all to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "admin manage profiles" on public.profiles;
+create policy "admin insert member profiles" on public.profiles for insert to authenticated
+  with check (public.is_admin() and role <> 'admin');
+create policy "admin update member profiles" on public.profiles for update to authenticated
+  using (public.is_admin() and role <> 'admin')
+  with check (public.is_admin() and role <> 'admin');
 create policy "team read test cases" on public.test_cases for select to authenticated using (true);
 create policy "team submit test cases" on public.test_cases for insert to authenticated with check (submitter_id = auth.uid());
 create policy "review test cases" on public.test_cases for update to authenticated using (submitter_id = auth.uid() or public.is_admin() or public.current_department() = '测试');

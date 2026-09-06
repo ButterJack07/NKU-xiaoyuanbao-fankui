@@ -120,6 +120,10 @@
     return request('/rest/v1/test_cases?select=*&order=created_at.desc', { method: 'GET', headers: headers() });
   }
 
+  async function listProfiles() {
+    return request('/rest/v1/profiles?select=id,username,full_name', { method: 'GET', headers: headers() });
+  }
+
   async function createTestCase(payload) {
     return request('/rest/v1/test_cases', { method: 'POST', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(payload) });
   }
@@ -156,6 +160,18 @@
     return body;
   }
 
+  async function updateProfile(id, patch) {
+    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,created_at').single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function downloadFile(url) {
+    var response = await fetch(url, { headers: { Authorization: 'Bearer ' + (window.PATCHWORK_AUTH_TOKEN || config.supabaseAnonKey) } });
+    if (!response.ok) throw new Error('文件下载失败');
+    return response.blob();
+  }
+
   window.PatchworkAPI = {
     isConfigured: isConfigured,
     uploadFile: uploadFile,
@@ -170,6 +186,9 @@
     updateTestCase: updateTestCase,
     listNotifications: listNotifications,
     createAssignmentEvent: createAssignmentEvent,
-    createTeamUser: createTeamUser
+    createTeamUser: createTeamUser,
+    updateProfile: updateProfile
+    ,listProfiles: listProfiles,
+    downloadFile: downloadFile
   };
 })();

@@ -12,7 +12,7 @@
     <button id="topUserCard" class="top-user-card" type="button" onclick="window.location.href='index.html'"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>
   </header>
   <main class="dashboard-shell upload-case-shell">
-    <div class="cases-topbar"><div class="cases-breadcrumb"><span>测试</span><b>›</b><strong>上传测试用例</strong></div></div>
+    <div class="cases-topbar"><div class="cases-breadcrumb"><a href="index.html">测试</a><b>›</b><a href="test-cases.html">测试用例</a><b>›</b><strong>上传测试用例</strong></div></div>
     <section class="cases-title upload-case-title"><p class="eyebrow">TEST GROUP / UPLOAD</p><h1>上传测试用例</h1><p>请上传已在本地完成的测试用例文件；网站将自动生成用例编号并记录上传信息。</p></section>
     <form id="uploadCaseForm" class="upload-case-card">
       <label class="upload-case-field"><span>测试用例文件 <i>*</i></span><div id="caseDropzone" class="case-dropzone"><input id="caseFile" name="file" type="file" required accept=".doc,.docx,.xls,.xlsx,.csv,.pdf,.zip"><span class="case-upload-icon">↑</span><strong>选择本地文件或拖拽至此处</strong><small>支持 Word、Excel 和项目允许的其他格式</small><em id="caseFileName">未选择文件</em></div></label>

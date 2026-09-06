@@ -7,7 +7,8 @@
 
   function renderNavigation() {
     if (!topbar) return;
-    topbar.innerHTML = '<a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页"><span><strong>校缘宝内测管理网站</strong></span></a>' +
+    var version = window.PATCHWORK_CONFIG && window.PATCHWORK_CONFIG.version ? window.PATCHWORK_CONFIG.version : '1.1.2';
+    topbar.innerHTML = '<a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页"><span><strong>校缘宝内测管理网站</strong><small class="brand-version">版本 ' + version + '</small></span></a>' +
       '<nav class="topnav" aria-label="主导航"><div class="nav-menu-card">' +
       '<a data-nav="home" class="nav-test-root" href="index.html">测试</a>' +
       '<a data-department="技术—前端" href="index.html?department=技术—前端">技术—前端</a>' +

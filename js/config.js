@@ -7,6 +7,7 @@
     tableName: 'bugs',
     storageBucket: 'bug-attachments',
     testCaseStorageBucket: 'test-case-files',
-    authEmailDomain: 'team.xiaoyuanbao.internal'
+    authEmailDomain: 'team.xiaoyuanbao.internal',
+    version: '1.1.2'
   };
 })();
