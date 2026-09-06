@@ -802,8 +802,6 @@
     if (event.target === event.currentTarget || event.target.id === 'imagePreviewStage') closeImagePreview();
   });
   var openLoginButton = document.getElementById('openLoginModal'); if (openLoginButton) openLoginButton.addEventListener('click', openLoginModal);
-  var topUserCard = document.getElementById('topUserCard');
-  if (topUserCard) topUserCard.addEventListener('click', openLoginModal);
   var loginFromTasks = document.getElementById('loginFromTasks'); if (loginFromTasks) loginFromTasks.addEventListener('click', openLoginModal);
   var closeLoginButton = document.getElementById('closeLoginModal'); if (closeLoginButton) closeLoginButton.addEventListener('click', closeLoginModal);
   var loginModal = document.getElementById('loginModal'); if (loginModal) loginModal.addEventListener('click', function (event) { if (event.target === event.currentTarget) closeLoginModal(); });
