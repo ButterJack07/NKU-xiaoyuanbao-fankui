@@ -45,7 +45,7 @@
     if (departmentSelect) { departmentSelect.value = departmentFromUrl; departmentSelect.disabled = true; departmentSelect.setAttribute('aria-label', '当前部门'); }
     document.title = '校缘宝内测管理网站 · ' + departmentFromUrl + '缺陷列表';
   }
-  async function load() { try { setupDepartmentView(); rows = await window.PatchworkAPI.listBugs(); render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
+  async function load() { try { rows = await window.PatchworkAPI.listBugs(); render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
   ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
   var newBugReport = document.getElementById('newBugReport');
   if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = 'submit-bug.html'; });
@@ -53,5 +53,6 @@
   list.addEventListener('click', function (event) { var button = event.target.closest('[data-bug-id]'); if (button) window.location.href = 'submit-bug.html?bug=' + encodeURIComponent(button.dataset.bugId); });
   if (departmentFromUrl && newBugReport) newBugReport.classList.add('hidden');
   if (!departmentFromUrl && !isDepartmentPage) document.getElementById('exportBugReports').classList.add('hidden');
+  setupDepartmentView();
   window.PATCHWORK_READY.then(load).catch(function (error) { toast(error.message, 'error'); });
 })();
