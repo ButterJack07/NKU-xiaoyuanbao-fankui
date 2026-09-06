@@ -11,8 +11,16 @@ jobs:
     steps:
       - name: Ping Supabase (read-only)
         run: |
+          BASE="${{ secrets.SUPABASE_URL }}"
+          KEY="${{ secrets.SUPABASE_ANON_KEY }}"
           code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/bugs?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
-          echo "HTTP $code"
-          [ "$code" = "200" ] || exit 1
+            "$BASE/rest/v1/bug_reports?select=id&limit=1" \
+            -H "apikey: $KEY")
+          echo "bug_reports HTTP $code"
+          if [ "$code" != "200" ]; then
+            code2=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$BASE/rest/v1/" \
+              -H "apikey: $KEY")
+            echo "rest root HTTP $code2"
+            [ "$code2" = "200" ] || exit 1
+          fi
