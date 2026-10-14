@@ -12,7 +12,7 @@
     var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     var pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    list.innerHTML = pageRows.map(function (row) { var action = row.role === 'admin' ? '<span class="user-edit-disabled">不可编辑</span>' : '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
+    list.innerHTML = pageRows.map(function (row) { var action = '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
     list.querySelectorAll('.user-edit-link').forEach(function (button) { button.addEventListener('click', function () { openEditUser(button.dataset.userId); }); });
     list.querySelectorAll('.user-reset-link').forEach(function (button) { button.addEventListener('click', function () { openResetPassword(button.dataset.resetUserId); }); });
     list.querySelectorAll('.user-name-link').forEach(function (button) { button.addEventListener('click', function () { openProfileInfo(button.dataset.profileId); }); });
@@ -37,13 +37,20 @@
   function closeResetPassword() { resetModal.classList.add('hidden'); resetUserId = null; }
   function openEditUser(id) {
     var row = rows.find(function (item) { return item.id === id; });
-    if (!row || row.role === 'admin') { toast('超级管理员不可编辑。', ''); return; }
+    if (!row) return;
     var form = document.getElementById('editUserForm');
-    form.department.value = row.department;
+    var isAdminRow = row.role === 'admin';
+    var departmentSelect = form.department;
+    Array.prototype.slice.call(departmentSelect.options).forEach(function (option) { if (option.value === '管理') departmentSelect.removeChild(option); });
+    if (isAdminRow && !Array.prototype.some.call(departmentSelect.options, function (option) { return option.value === row.department; })) {
+      var option = document.createElement('option'); option.value = row.department; option.textContent = row.department; departmentSelect.appendChild(option);
+    }
+    departmentSelect.value = row.department;
+    departmentSelect.disabled = isAdminRow;
     form.role.value = row.role;
     form.active.value = String(row.active);
     if (form.review_stage) form.review_stage.value = String(Number(row.review_stage) || 0);
-    form.role.disabled = false;
+    form.role.disabled = isAdminRow;
     document.getElementById('editUserIdentity').textContent = '账号：' + row.username + '｜' + row.full_name;
     document.getElementById('editUserError').classList.add('hidden');
     editModal.dataset.userId = row.id;
@@ -80,9 +87,10 @@
     var form = event.currentTarget, button = form.querySelector('button[type="submit"]'), error = document.getElementById('editUserError');
     var row = rows.find(function (item) { return item.id === editModal.dataset.userId; });
     if (!row) return;
-    var payload = { department: form.department.value, active: form.active.value === 'true' };
-    payload.role = form.role.value;
+    var payload = { active: form.active.value === 'true' };
     payload.review_stage = Number(form.review_stage && form.review_stage.value) || 0;
+    if (row.role === 'admin') { payload.role = 'admin'; payload.department = row.department; }
+    else { payload.department = form.department.value; payload.role = form.role.value; }
     error.classList.add('hidden'); button.disabled = true; button.textContent = '保存中…';
     try { var updated = await window.PatchworkAPI.updateProfile(row.id, payload); rows = rows.map(function (item) { return item.id === updated.id ? updated : item; }); render(); closeEditUser(); toast('用户信息已更新。', 'success'); }
     catch (err) { error.textContent = err.message || '保存失败。'; error.classList.remove('hidden'); }

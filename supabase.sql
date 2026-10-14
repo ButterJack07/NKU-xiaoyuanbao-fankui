@@ -262,8 +262,8 @@ drop policy if exists "admin update member profiles" on public.profiles;
 create policy "admin insert member profiles" on public.profiles for insert to authenticated
   with check (public.is_admin() and role <> 'admin');
 create policy "admin update member profiles" on public.profiles for update to authenticated
-  using (public.is_admin() and role <> 'admin')
-  with check (public.is_admin() and role <> 'admin');
+  using (public.is_admin())
+  with check (public.is_admin() and role in ('member', 'leader', 'admin'));
 create policy "team read test cases" on public.test_cases for select to authenticated using (true);
 create policy "team submit test cases" on public.test_cases for insert to authenticated with check (submitter_id = auth.uid());
 create policy "review test cases" on public.test_cases for update to authenticated using (submitter_id = auth.uid() or public.is_admin() or public.current_department() = '测试');
@@ -424,3 +424,21 @@ drop policy if exists "internal delete bug attachments" on storage.objects;
 create policy "internal delete bug attachments"
 on storage.objects for delete to authenticated
 using (bucket_id = 'bug-attachments');
+
+-- 超级管理员账号可编辑（审核权限、账号状态等），但禁止改变“是否超管”。
+create or replace function public.enforce_profile_role_guard()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  if old.role = 'admin' and new.role <> 'admin' then
+    raise exception '不能取消超级管理员身份';
+  end if;
+  if new.role = 'admin' and old.role <> 'admin' then
+    raise exception '不能将普通用户提升为超级管理员';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists profiles_role_guard on public.profiles;
+create trigger profiles_role_guard before update on public.profiles
+for each row execute function public.enforce_profile_role_guard();
