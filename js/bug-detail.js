@@ -52,7 +52,7 @@
       return '<div class="review-event"><div class="review-event-head"><span class="' + actionClass + '">' + stageLabel + ' · ' + actionLabel + '</span><span>' + esc(event.reviewer_name || '审核人') + ' · ' + date(event.created_at) + '</span></div>' + (event.note ? '<p>' + esc(event.note) + '</p>' : '<p class="review-event-empty">（未填写备注）</p>') + '</div>';
     }).join('') : '<p class="review-event-empty">暂无审核记录。</p>';
     var actions = '';
-    if (canReview()) actions += '<button id="reviewButton" class="case-action-button" type="button">' + (stage === 1 ? '一审' : '二审') + '：通过 / 打回</button>';
+    if (canReview()) actions += '<button id="reviewButton" class="case-action-button" type="button">进入' + (stage === 1 ? '一审' : '二审') + '</button>';
     if (isReversible() && isSubmitter()) actions += '<a class="case-action-button" href="submit-bug.html?bug=' + encodeURIComponent(bug.id) + '">修改并重新提交</a>' + '<button id="resubmitButton" class="case-action-button" type="button">直接重新提交</button>' + (bug.status === 'rejected' ? '<button id="postponeButton" class="detail-muted-button" type="button">暂缓上传</button>' : '') + '<button id="cancelBugButton" class="detail-muted-button" type="button">取消上传</button>';
     card.innerHTML = '<h2>审核流程</h2><p class="review-state">' + stateLine + '</p><div class="review-history">' + history + '</div><div class="detail-actions review-actions">' + actions + '</div>';
     var reviewButton = document.getElementById('reviewButton'); if (reviewButton) reviewButton.onclick = openReviewModal;
