@@ -26,7 +26,7 @@
   function toast(t, type) { var n = document.getElementById('toast'); n.textContent = t; n.className = 'toast show ' + (type || ''); setTimeout(function () { n.className = 'toast'; }, 3000); }
   function bugLabel() { return (bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001') + '｜' + bug.title; }
   function currentStage() { return bug.status === 'pending_review_1' ? 1 : bug.status === 'pending_review_2' ? 2 : 0; }
-  function canReview() { var p = window.PATCHWORK_PROFILE, stage = currentStage(); if (!p || !stage) return false; return p.role === 'admin' || Number(p.review_stage) === stage; }
+  function canReview() { var p = window.PATCHWORK_PROFILE, stage = currentStage(); if (!p || !stage) return false; return Number(p.review_stage) === stage; }
   function isSubmitter() { var p = window.PATCHWORK_PROFILE; return Boolean(p && (bug.submitter_id === p.id || p.role === 'admin')); }
   function isReversible() { return bug.status === 'rejected' || bug.status === 'postponed'; }
 

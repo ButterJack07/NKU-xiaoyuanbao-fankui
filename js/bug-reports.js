@@ -5,7 +5,7 @@
   var STATUS_TEXT = { pending_review_1: '待一审', pending_review_2: '待二审', rejected: '已打回', postponed: '已暂缓', open: '待处理', in_progress: '处理中', resolved: '已解决' };
   function esc(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function isDistributed(status) { return DISTRIBUTED.indexOf(status) !== -1; }
-  function canReview(bug) { var p = window.PATCHWORK_PROFILE; if (!p) return false; if (p.role === 'admin') return true; if (bug.status === 'pending_review_1') return Number(p.review_stage) === 1; if (bug.status === 'pending_review_2') return Number(p.review_stage) === 2; return false; }
+  function canReview(bug) { var p = window.PATCHWORK_PROFILE; if (!p) return false; if (bug.status === 'pending_review_1') return Number(p.review_stage) === 1; if (bug.status === 'pending_review_2') return Number(p.review_stage) === 2; return false; }
   function formatDate(value) { return value ? new Date(value).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
   function toast(text, type) { var node = document.getElementById('toast'); node.textContent = text; node.className = 'toast show ' + (type || ''); setTimeout(function () { node.className = 'toast'; }, 3200); }
   function profileFor(id) { return profiles.find(function (profile) { return profile.id === id; }); }

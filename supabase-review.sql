@@ -108,7 +108,7 @@ on public.bug_review_events for select to authenticated using (true);
 drop policy if exists "reviewer create bug review events" on public.bug_review_events;
 create policy "reviewer create bug review events"
 on public.bug_review_events for insert to authenticated
-with check (reviewer_id = auth.uid() and (public.is_reviewer() or public.is_admin()));
+with check (reviewer_id = auth.uid() and public.is_reviewer() and stage = public.current_review_stage());
 
 -- 5) bug_reports 的 RLS 策略（读取 / 新建 / 更新 / 删除）。
 alter table public.bug_reports enable row level security;
@@ -152,7 +152,30 @@ create policy "internal delete bug reports"
 on public.bug_reports for delete to authenticated
 using (submitter_id = auth.uid() or public.is_admin());
 
--- 6) 附件删除策略（取消上传时清理附件）。
+-- 6) 审核环节校验：只有被设为对应环节的审核人才能完成该次审核，超管（非审核人）不可代审。
+create or replace function public.enforce_bug_review_stage()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.status is distinct from old.status then
+    if old.status = 'pending_review_1' and new.status in ('pending_review_2', 'rejected') then
+      if public.current_review_stage() <> 1 then
+        raise exception '当前用户不是第一审核人，无法完成第一审核';
+      end if;
+    elsif old.status = 'pending_review_2' and new.status in ('open', 'rejected') then
+      if public.current_review_stage() <> 2 then
+        raise exception '当前用户不是第二审核人，无法完成第二审核';
+      end if;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists bug_reports_review_guard on public.bug_reports;
+create trigger bug_reports_review_guard before update on public.bug_reports
+for each row execute function public.enforce_bug_review_stage();
+
+-- 7) 附件删除策略（取消上传时清理附件）。
 drop policy if exists "internal delete bug attachments" on storage.objects;
 create policy "internal delete bug attachments"
 on storage.objects for delete to authenticated

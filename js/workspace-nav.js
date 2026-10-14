@@ -75,7 +75,7 @@
       link.classList.toggle('hidden', !profile || profile.role !== 'admin');
     });
     document.querySelectorAll('[data-review-only]').forEach(function (link) {
-      link.classList.toggle('hidden', !profile || (profile.role !== 'admin' && !(Number(profile.review_stage) > 0)));
+      link.classList.toggle('hidden', !profile || !(Number(profile.review_stage) > 0));
     });
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');

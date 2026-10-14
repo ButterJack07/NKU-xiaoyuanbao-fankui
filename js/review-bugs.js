@@ -9,7 +9,6 @@
   function allowedStatuses() {
     var profile = window.PATCHWORK_PROFILE;
     if (!profile) return [];
-    if (profile.role === 'admin') return ['pending_review_1', 'pending_review_2'];
     var stage = Number(profile.review_stage);
     if (stage === 1) return ['pending_review_1'];
     if (stage === 2) return ['pending_review_2'];
@@ -28,7 +27,7 @@
       if (title) title.textContent = '待审核缺陷';
       return;
     }
-    if (title) title.textContent = profile.role === 'admin' ? '待审核缺陷（全部）' : (allowed[0] === 'pending_review_1' ? '待一审缺陷' : '待二审缺陷');
+    if (title) title.textContent = allowed[0] === 'pending_review_1' ? '待一审缺陷' : '待二审缺陷';
     var visible = rows.filter(function (bug) { return allowed.indexOf(bug.status) !== -1 && (!query || String(bug.title || '').toLowerCase().includes(query)); });
     list.innerHTML = visible.map(function (bug) {
       var importance = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
@@ -43,7 +42,7 @@
       await window.PATCHWORK_READY;
       var profile = window.PATCHWORK_PROFILE;
       if (!profile) return;
-      if (profile.role !== 'admin' && !(Number(profile.review_stage) > 0)) {
+      if (!(Number(profile.review_stage) > 0)) {
         document.getElementById('reviewEmpty').classList.remove('hidden');
         document.getElementById('reviewEmpty').textContent = '当前账号没有审核权限。';
         return;
