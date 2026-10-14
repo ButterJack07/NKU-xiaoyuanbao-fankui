@@ -22,8 +22,9 @@
 
   var labels = {
     importance: { light: '轻', medium: '中', heavy: '重' },
-    status: { open: '待处理', in_progress: '修复中', resolved: '已解决' }
+    status: { pending_review_1: '待一审', pending_review_2: '待二审', rejected: '已打回', postponed: '已暂缓', open: '待处理', in_progress: '修复中', resolved: '已解决' }
   };
+  function isDistributed(status) { return ['open', 'in_progress', 'resolved'].indexOf(status) !== -1; }
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -145,7 +146,7 @@
     return bugs.filter(function (bug) {
       var assignedToMe = bug.assignee_id === identityId;
       var assignedToMyDepartment = !bug.assignee_id && bug.assignee_department === identityDepartment;
-      return bug.status !== 'resolved' && (assignedToMe || assignedToMyDepartment);
+      return isDistributed(bug.status) && bug.status !== 'resolved' && (assignedToMe || assignedToMyDepartment);
     });
   }
 
@@ -255,8 +256,9 @@
       var matchesStatus = currentStatus === 'all' || bug.status === currentStatus;
       var matchesImportance = importance === 'all' || bug.importance === importance;
       var matchesDepartment = currentDepartment === 'all' || bug.assignee_department === currentDepartment;
+      var matchesDistributed = !departmentFromUrl || isDistributed(bug.status);
       var haystack = [bug.title, bug.module, bug.reporter, bug.assignee, bug.assignee_department].join(' ').toLowerCase();
-      return matchesStatus && matchesImportance && matchesDepartment && (!query || haystack.includes(query));
+      return matchesStatus && matchesImportance && matchesDepartment && matchesDistributed && (!query || haystack.includes(query));
     });
   }
 
@@ -352,7 +354,7 @@
     var query = (document.getElementById('departmentCaseSearch').value || '').trim().toLowerCase();
     var status = document.getElementById('departmentCaseStatus').value;
     var importance = document.getElementById('departmentCaseImportance').value;
-    var filtered = bugs.filter(function (bug) { return bug.assignee_department === departmentFromUrl && (status === 'all' || bug.status === status) && (importance === 'all' || bug.importance === importance) && (!query || String(bug.title || '').toLowerCase().includes(query)); });
+    var filtered = bugs.filter(function (bug) { return bug.assignee_department === departmentFromUrl && isDistributed(bug.status) && (status === 'all' || bug.status === status) && (importance === 'all' || bug.importance === importance) && (!query || String(bug.title || '').toLowerCase().includes(query)); });
     list.innerHTML = filtered.map(function (bug) {
       var mine = currentProfile && bug.assignee_id === currentProfile.id;
       var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
@@ -413,6 +415,7 @@
     var importance = document.getElementById('departmentImportanceFilter').value;
     var rows = bugs.filter(function (bug) {
       return bug.assignee_department === departmentFromUrl &&
+        isDistributed(bug.status) &&
         (status === 'all' || bug.status === status) &&
         (importance === 'all' || bug.importance === importance) &&
         (!query || bug.title.toLowerCase().includes(query));

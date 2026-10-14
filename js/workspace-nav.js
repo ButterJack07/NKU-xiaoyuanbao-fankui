@@ -15,6 +15,7 @@
       '<a data-department="技术—后端" href="department-bugs.html?department=技术—后端">技术—后端</a>' +
       '<a data-department="设计" href="department-bugs.html?department=设计">设计</a>' +
       '<a data-department="产品" href="department-bugs.html?department=产品">产品</a>' +
+      '<a data-review-only class="review-nav-link hidden" href="review-bugs.html">待审核</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
       '</div><a class="nav-notice" href="announcements.html">公告信息</a></nav>' +
       '<button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>';
@@ -73,19 +74,23 @@
     document.querySelectorAll('[data-admin-only]').forEach(function (link) {
       link.classList.toggle('hidden', !profile || profile.role !== 'admin');
     });
+    document.querySelectorAll('[data-review-only]').forEach(function (link) {
+      link.classList.toggle('hidden', !profile || (profile.role !== 'admin' && !(Number(profile.review_stage) > 0)));
+    });
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
       document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
         var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
         if (link.hasAttribute('data-admin-only')) isAllowed = false;
+        if (link.hasAttribute('data-review-only')) isAllowed = Number(profile.review_stage) > 0;
         link.classList.toggle('nav-disabled', !isAllowed);
         link.setAttribute('aria-disabled', String(!isAllowed));
         if (!isAllowed) link.removeAttribute('href');
       });
       var currentPage = window.location.pathname.split('/').pop() || 'index.html';
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment));
-      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html'].includes(currentPage);
+      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html'].includes(currentPage);
       if (isPublicWorkspacePage) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {

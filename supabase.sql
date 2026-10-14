@@ -327,3 +327,98 @@ using (bucket_id = 'test-case-files');
 
 -- 该方案按需求采用匿名内部访问。正式上线时建议接入 Supabase Auth，
 -- 将看板 update 策略限制为 authenticated 开发成员，并关闭公网访问。
+
+-- ============================================================
+-- 缺陷报告审核流程（一审 -> 二审 -> 分发）
+-- ============================================================
+
+-- 审核人配置：0=非审核人，1=第一审核，2=第二审核，由超级管理员在用户管理中设置。
+alter table public.profiles add column if not exists review_stage integer not null default 0;
+alter table public.profiles drop constraint if exists profiles_review_stage_check;
+alter table public.profiles add constraint profiles_review_stage_check check (review_stage in (0, 1, 2));
+
+create or replace function public.is_reviewer()
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.profiles where id = auth.uid() and review_stage in (1, 2) and active); $$;
+
+create or replace function public.current_review_stage()
+returns integer language sql stable security definer set search_path = public
+as $$ select coalesce((select review_stage from public.profiles where id = auth.uid() and active), 0); $$;
+
+-- 缺陷新增审核相关字段。
+alter table public.bugs add column if not exists review_note text not null default '';
+alter table public.bugs add column if not exists reviewer_id uuid references auth.users(id);
+
+-- 扩展状态：待一审、待二审、已打回、已暂缓，保留原有分发后的处理状态。
+alter table public.bugs drop constraint if exists bugs_status_check;
+alter table public.bugs add constraint bugs_status_check
+  check (status in ('pending_review_1', 'pending_review_2', 'rejected', 'postponed', 'open', 'in_progress', 'resolved'));
+alter table public.bugs alter column status set default 'pending_review_1';
+
+-- 审核操作历史：每次通过或打回都会记录，备注对所有成员可见。
+create table if not exists public.bug_review_events (
+  id uuid primary key default gen_random_uuid(),
+  bug_id uuid not null references public.bugs(id) on delete cascade,
+  stage integer not null check (stage in (1, 2)),
+  action text not null check (action in ('approve', 'reject')),
+  note text not null default '',
+  reviewer_id uuid references auth.users(id),
+  reviewer_name text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bug_review_events_bug_idx on public.bug_review_events (bug_id, created_at asc);
+alter table public.bug_review_events enable row level security;
+
+drop policy if exists "team read bug review events" on public.bug_review_events;
+create policy "team read bug review events"
+on public.bug_review_events for select to authenticated using (true);
+
+drop policy if exists "reviewer create bug review events" on public.bug_review_events;
+create policy "reviewer create bug review events"
+on public.bug_review_events for insert to authenticated
+with check (reviewer_id = auth.uid() and (public.is_reviewer() or public.is_admin()));
+
+-- 提交后进入待一审，不再直接分发。
+drop policy if exists "internal create bugs" on public.bugs;
+create policy "internal create bugs"
+on public.bugs for insert to authenticated
+with check (
+  (submitter_id = auth.uid() or submitter_id is null)
+  and
+  status = 'pending_review_1'
+  and fix_plan = ''
+  and assignee = ''
+  and resolved_at is null
+  and cardinality(attachment_urls) <= 8
+);
+
+-- 审核人也可以更新缺陷状态与审核备注。
+drop policy if exists "internal update bugs" on public.bugs;
+create policy "internal update bugs"
+on public.bugs for update to authenticated
+using (
+  submitter_id = auth.uid()
+  or follow_up_id = auth.uid()
+  or public.is_admin()
+  or public.current_department() = assignee_department
+  or public.is_reviewer()
+)
+with check (
+  status in ('pending_review_1', 'pending_review_2', 'rejected', 'postponed', 'open', 'in_progress', 'resolved')
+  and char_length(fix_plan) <= 3000
+  and char_length(assignee) <= 40
+  and char_length(assignee_department) <= 60
+  and char_length(review_note) <= 1000
+);
+
+-- 提交人可取消上传（删除报告），超级管理员也可删除。
+drop policy if exists "internal delete bugs" on public.bugs;
+create policy "internal delete bugs"
+on public.bugs for delete to authenticated
+using (submitter_id = auth.uid() or public.is_admin());
+
+drop policy if exists "internal delete bug attachments" on storage.objects;
+create policy "internal delete bug attachments"
+on storage.objects for delete to authenticated
+using (bucket_id = 'bug-attachments');

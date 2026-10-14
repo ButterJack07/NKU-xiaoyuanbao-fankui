@@ -3,6 +3,7 @@
   var rows = [], list = document.getElementById('userList'), pageSize = 5, currentPage = 1;
   function esc(value) { return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function toast(text, type) { var node = document.getElementById('toast'); node.textContent = text; node.className = 'toast show ' + (type || ''); setTimeout(function () { node.className = 'toast'; }, 3500); }
+  function roleLabel(row) { var base = row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员'; if (Number(row.review_stage) === 1) base += ' · 一审'; else if (Number(row.review_stage) === 2) base += ' · 二审'; return base; }
   function render() {
     var query = document.getElementById('userSearch').value.trim().toLowerCase();
     var department = document.getElementById('userDepartment').value;
@@ -11,7 +12,7 @@
     var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     var pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    list.innerHTML = pageRows.map(function (row) { var action = row.role === 'admin' ? '<span class="user-edit-disabled">不可编辑</span>' : '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员') + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
+    list.innerHTML = pageRows.map(function (row) { var action = row.role === 'admin' ? '<span class="user-edit-disabled">不可编辑</span>' : '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
     list.querySelectorAll('.user-edit-link').forEach(function (button) { button.addEventListener('click', function () { openEditUser(button.dataset.userId); }); });
     list.querySelectorAll('.user-reset-link').forEach(function (button) { button.addEventListener('click', function () { openResetPassword(button.dataset.resetUserId); }); });
     list.querySelectorAll('.user-name-link').forEach(function (button) { button.addEventListener('click', function () { openProfileInfo(button.dataset.profileId); }); });
@@ -24,12 +25,12 @@
   async function load() {
     await window.PATCHWORK_READY;
     if (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.role !== 'admin') { window.location.replace('index.html'); return; }
-    var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,created_at').order('created_at', { ascending: true });
+    var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,review_stage,created_at').order('created_at', { ascending: true });
     if (result.error) throw result.error;
     rows = result.data || []; render();
   }
   var editModal = document.getElementById('editUserModal');
-  function openProfileInfo(id) { var row = rows.find(function (item) { return item.id === id; }); if (!row) return; var modal = document.getElementById('profileInfoModal'); if (!modal) { modal = document.createElement('div'); modal.id = 'profileInfoModal'; modal.className = 'modal-backdrop hidden'; document.body.appendChild(modal); } modal.innerHTML = '<section class="user-modal"><div class="developer-modal-header"><div><h2>个人信息</h2><p class="user-modal-identity">' + esc(row.full_name) + '｜' + esc(row.department === '测试' ? '测试组' : row.department) + '</p><p class="user-modal-help">账号资料查看</p></div><button class="icon-button" type="button" data-close-profile-info>×</button></div><div class="profile-info-content"><div><span>账号</span><strong>' + esc(row.username) + '</strong></div><div><span>所属部门</span><strong>' + esc(row.department) + '</strong></div><div><span>权限</span><strong>' + esc(row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员') + '</strong></div><div><span>账号状态</span><strong>' + (row.active ? '启用' : '停用') + '</strong></div><div><span>QQ</span><strong>' + esc(row.qq || '—') + '</strong></div><div><span>微信</span><strong>' + esc(row.wechat || '—') + '</strong></div><div><span>电话号码</span><strong>' + esc(row.phone || '—') + '</strong></div><div><span>可联系时间</span><strong>' + esc(row.contact_time || '—') + '</strong></div></div><div class="profile-info-actions"><button class="case-action-button" type="button" data-close-profile-info>关闭</button></div></section>'; modal.querySelectorAll('[data-close-profile-info]').forEach(function (button) { button.onclick = function () { modal.classList.add('hidden'); }; }); modal.classList.remove('hidden'); }
+  function openProfileInfo(id) { var row = rows.find(function (item) { return item.id === id; }); if (!row) return; var modal = document.getElementById('profileInfoModal'); if (!modal) { modal = document.createElement('div'); modal.id = 'profileInfoModal'; modal.className = 'modal-backdrop hidden'; document.body.appendChild(modal); } modal.innerHTML = '<section class="user-modal"><div class="developer-modal-header"><div><h2>个人信息</h2><p class="user-modal-identity">' + esc(row.full_name) + '｜' + esc(row.department === '测试' ? '测试组' : row.department) + '</p><p class="user-modal-help">账号资料查看</p></div><button class="icon-button" type="button" data-close-profile-info>×</button></div><div class="profile-info-content"><div><span>账号</span><strong>' + esc(row.username) + '</strong></div><div><span>所属部门</span><strong>' + esc(row.department) + '</strong></div><div><span>权限</span><strong>' + esc(row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员') + '</strong></div><div><span>审核权限</span><strong>' + esc(Number(row.review_stage) === 1 ? '第一审核' : Number(row.review_stage) === 2 ? '第二审核' : '非审核人') + '</strong></div><div><span>账号状态</span><strong>' + (row.active ? '启用' : '停用') + '</strong></div><div><span>QQ</span><strong>' + esc(row.qq || '—') + '</strong></div><div><span>微信</span><strong>' + esc(row.wechat || '—') + '</strong></div><div><span>电话号码</span><strong>' + esc(row.phone || '—') + '</strong></div><div><span>可联系时间</span><strong>' + esc(row.contact_time || '—') + '</strong></div></div><div class="profile-info-actions"><button class="case-action-button" type="button" data-close-profile-info>关闭</button></div></section>'; modal.querySelectorAll('[data-close-profile-info]').forEach(function (button) { button.onclick = function () { modal.classList.add('hidden'); }; }); modal.classList.remove('hidden'); }
   var resetModal = document.getElementById('resetPasswordModal');
   var resetUserId = null;
   function openResetPassword(id) { var row = rows.find(function (item) { return item.id === id; }); if (!row) return; resetUserId = id; document.getElementById('resetPasswordIdentity').textContent = '账号：' + row.username + '｜' + row.full_name; document.getElementById('resetPasswordError').classList.add('hidden'); resetModal.classList.remove('hidden'); }
@@ -41,6 +42,7 @@
     form.department.value = row.department;
     form.role.value = row.role;
     form.active.value = String(row.active);
+    if (form.review_stage) form.review_stage.value = String(Number(row.review_stage) || 0);
     form.role.disabled = false;
     document.getElementById('editUserIdentity').textContent = '账号：' + row.username + '｜' + row.full_name;
     document.getElementById('editUserError').classList.add('hidden');
@@ -80,6 +82,7 @@
     if (!row) return;
     var payload = { department: form.department.value, active: form.active.value === 'true' };
     payload.role = form.role.value;
+    payload.review_stage = Number(form.review_stage && form.review_stage.value) || 0;
     error.classList.add('hidden'); button.disabled = true; button.textContent = '保存中…';
     try { var updated = await window.PatchworkAPI.updateProfile(row.id, payload); rows = rows.map(function (item) { return item.id === updated.id ? updated : item; }); render(); closeEditUser(); toast('用户信息已更新。', 'success'); }
     catch (err) { error.textContent = err.message || '保存失败。'; error.classList.remove('hidden'); }

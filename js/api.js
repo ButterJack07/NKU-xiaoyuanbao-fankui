@@ -86,11 +86,19 @@
   }
 
   async function listBugs() {
-    var fields = 'id,bug_no,title,description,reporter,module,environment,importance,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at,submitter_id,transfer_from,transfer_note,follow_up_id,assigned_at';
-    return request('/rest/v1/' + config.tableName + '?select=' + fields + '&order=created_at.desc', {
-      method: 'GET',
-      headers: headers()
-    });
+    var baseFields = 'id,bug_no,title,description,reporter,module,environment,importance,repro_steps,expected_result,actual_result,attachment_urls,status,fix_plan,assignee,assignee_department,assignee_id,target_date,resolved_at,created_at,updated_at,submitter_id,transfer_from,transfer_note,follow_up_id,assigned_at';
+    var extend = function (fields) {
+      return request('/rest/v1/' + config.tableName + '?select=' + fields + '&order=created_at.desc', {
+        method: 'GET',
+        headers: headers()
+      });
+    };
+    try {
+      return await extend(baseFields + ',review_note,reviewer_id');
+    } catch (error) {
+      if (/review_note|reviewer_id/i.test(error.message || '')) return extend(baseFields);
+      throw error;
+    }
   }
 
   async function updateBug(id, patch) {
@@ -98,6 +106,43 @@
       method: 'PATCH',
       headers: headers({ Prefer: 'return=representation' }),
       body: JSON.stringify(patch)
+    });
+  }
+
+  async function deleteBug(id) {
+    return request('/rest/v1/' + config.tableName + '?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: headers()
+    });
+  }
+
+  async function listReviewEvents(bugId) {
+    try {
+      return await request('/rest/v1/bug_review_events?select=*&bug_id=eq.' + encodeURIComponent(bugId) + '&order=created_at.asc', { method: 'GET', headers: headers() });
+    } catch (error) {
+      if (/bug_review_events|does not exist|relation/i.test(error.message || '')) return [];
+      throw error;
+    }
+  }
+
+  async function createReviewEvent(payload) {
+    return request('/rest/v1/bug_review_events', {
+      method: 'POST',
+      headers: headers({ Prefer: 'return=representation' }),
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function deleteAttachment(url, bucketName) {
+    if (!url) return null;
+    var bucket = bucketName || config.storageBucket;
+    var marker = '/storage/v1/object/public/' + bucket + '/';
+    var index = String(url).indexOf(marker);
+    if (index === -1) return null;
+    var path = String(url).slice(index + marker.length);
+    return request('/storage/v1/object/' + bucket + '/' + path, {
+      method: 'DELETE',
+      headers: { apikey: config.supabaseAnonKey, Authorization: 'Bearer ' + (window.PATCHWORK_AUTH_TOKEN || config.supabaseAnonKey) }
     });
   }
 
@@ -121,7 +166,13 @@
   }
 
   async function listProfiles() {
-    return request('/rest/v1/profiles?select=id,username,full_name,department,role,active,qq,wechat,phone,contact_time&active=eq.true', { method: 'GET', headers: headers() });
+    var baseFields = 'id,username,full_name,department,role,active,qq,wechat,phone,contact_time';
+    try {
+      return await request('/rest/v1/profiles?select=' + baseFields + ',review_stage&active=eq.true', { method: 'GET', headers: headers() });
+    } catch (error) {
+      if (/review_stage/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + '&active=eq.true', { method: 'GET', headers: headers() });
+      throw error;
+    }
   }
 
   async function listAnnouncements() {
@@ -176,7 +227,7 @@
   }
 
   async function updateProfile(id, patch) {
-    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,created_at').single();
+    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,review_stage,created_at').single();
     if (result.error) throw result.error;
     return result.data;
   }
@@ -193,6 +244,10 @@
     createBug: createBug,
     listBugs: listBugs,
     updateBug: updateBug,
+    deleteBug: deleteBug,
+    listReviewEvents: listReviewEvents,
+    createReviewEvent: createReviewEvent,
+    deleteAttachment: deleteAttachment,
     listDevelopers: listDevelopers,
     createDeveloper: createDeveloper
     ,getProfile: getProfile,
