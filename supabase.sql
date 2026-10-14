@@ -257,6 +257,8 @@ drop policy if exists "read own notifications" on public.notifications;
 drop policy if exists "update own notifications" on public.notifications;
 create policy "team read profiles" on public.profiles for select to authenticated using (true);
 drop policy if exists "admin manage profiles" on public.profiles;
+drop policy if exists "admin insert member profiles" on public.profiles;
+drop policy if exists "admin update member profiles" on public.profiles;
 create policy "admin insert member profiles" on public.profiles for insert to authenticated
   with check (public.is_admin() and role <> 'admin');
 create policy "admin update member profiles" on public.profiles for update to authenticated
