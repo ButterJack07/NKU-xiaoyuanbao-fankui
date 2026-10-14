@@ -16,7 +16,7 @@
       <label class="field field-full"><span>实际结果 <i>*</i></span><input name="actual_result" required maxlength="1500" placeholder="实际出现的结果。"></label>
       <div class="field-row"><label class="field"><span>严重程度 <i>*</i></span><select name="importance" required><option value="">请选择严重程度</option><option value="heavy">严重</option><option value="medium">一般</option><option value="light">轻微</option></select></label><label class="field"><span>归属部门 <i>*</i></span><select name="assignee_department" required><option value="">请选择归属部门</option><option value="技术—前端">技术—前端</option><option value="技术—后端">技术—后端</option><option value="设计">设计</option><option value="产品">产品</option></select></label></div>
       <label class="field field-full"><span>附件 <i>*</i></span><label id="dropzone" class="upload-zone"><input id="attachments" name="attachments" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" multiple><span class="upload-icon">↑</span><strong>上传截图、录屏或文件</strong><small>支持图片、录屏、PDF、Word 和 Excel 文件</small></label><div id="fileList" class="file-list"></div></label>
-      <div class="form-actions"><button id="submitButton" class="button button-primary" type="submit"><span>提交缺陷报告</span></button></div><p class="bug-submit-note">提交后系统生成 BUG 编号并进入审核流程：测试组长一审通过后，由产品二审，二审通过后分发至对应部门。<br>部门说明：前端—页面交互；后端—数据服务；设计—视觉资源；产品—需求流程。</p>
+      <div class="form-actions"><button id="submitButton" class="button button-primary" type="submit"><span>提交缺陷报告</span></button></div><p class="bug-submit-note">提交后系统生成 BUG 编号并进入审核流程：第一审核通过后进入第二审核，第二审核通过后分发至对应部门。<br>部门说明：前端—页面交互；后端—数据服务；设计—视觉资源；产品—需求流程。</p>
     </form>
   </section>
 </main>

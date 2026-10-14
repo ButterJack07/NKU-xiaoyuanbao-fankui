@@ -207,7 +207,7 @@
         var created = await window.PatchworkAPI.createBug(data);
         bug = created && created[0];
         document.getElementById('successTitle').textContent = '缺陷报告已提交';
-        document.getElementById('successMessage').innerHTML = '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待测试组长审核。';
+        document.getElementById('successMessage').innerHTML = '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待第一审核。';
       }
       successModal.classList.remove('hidden');
     } catch (error) {

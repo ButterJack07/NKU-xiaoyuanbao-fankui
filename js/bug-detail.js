@@ -40,8 +40,8 @@
     if (!card) return;
     var stage = currentStage();
     var stateLine = '';
-    if (stage === 1) stateLine = '当前环节：<b>测试组长一审</b>（待审核）';
-    else if (stage === 2) stateLine = '当前环节：<b>产品二审</b>（一审已通过，待审核）';
+    if (stage === 1) stateLine = '当前环节：<b>待第一审核</b>（审核人由超级管理员设置）';
+    else if (stage === 2) stateLine = '当前环节：<b>待第二审核</b>（第一审核已通过，审核人由超级管理员设置）';
     else if (bug.status === 'rejected') stateLine = '当前环节：<b>已打回</b>，等待提交人修改后重新提交。';
     else if (bug.status === 'postponed') stateLine = '当前环节：<b>已暂缓</b>，暂不分发，可稍后重新提交审核。';
     else stateLine = '审核已完成，报告已分发至对应部门。';
@@ -68,8 +68,8 @@
     document.getElementById('detailModule').textContent = bug.module || '—'; document.getElementById('detailDescription').textContent = bug.description || '—'; document.getElementById('detailSteps').textContent = bug.repro_steps || '—'; document.getElementById('detailExpected').textContent = bug.expected_result || '—'; document.getElementById('detailActual').textContent = bug.actual_result || '—'; document.getElementById('detailImportance').textContent = importanceText[bug.importance] || bug.importance || '—'; var code = bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001'; document.getElementById('detailAttachments').innerHTML = attachmentSummary(bug.attachment_urls || [], code);
     document.getElementById('detailAssignee').textContent = bug.assignee || '—'; document.getElementById('detailContact').textContent = '联系提交人'; document.getElementById('detailStatus').textContent = statusText[bug.status] || bug.status || '—'; document.getElementById('detailNote').textContent = bug.review_note || bug.transfer_note || bug.fix_plan || '暂无备注';
     var note;
-    if (bug.status === 'pending_review_1') note = '报告处于待一审状态，由测试组长审核；审核人可填写备注，备注对所有成员可见。';
-    else if (bug.status === 'pending_review_2') note = '一审已通过，等待产品二审；二审通过后将分发至对应部门。';
+    if (bug.status === 'pending_review_1') note = '报告处于待第一审核状态，由超级管理员指定的第一审核人审核；审核人可填写备注，备注对所有成员可见。';
+    else if (bug.status === 'pending_review_2') note = '第一审核已通过，等待超级管理员指定的第二审核人审核；通过后将分发至对应部门。';
     else if (bug.status === 'rejected') note = '审核未通过，提交人可修改后重新提交、暂缓上传或取消上传。';
     else if (bug.status === 'postponed') note = '已暂缓上传，暂不分发，报告保留在测试组列表，可稍后重新提交审核。';
     else note = current === '测试' ? '测试普通成员可查看；指定跟进人和转组仅测试组长、超级管理员可操作。' : current + '成员可指定跟进人与处理；转组仅本部门组长、超级管理员可操作。';
@@ -120,7 +120,7 @@
       closeReviewModal();
       await loadReviewEvents();
       render();
-      toast(action === 'approve' ? (stage === 1 ? '一审已通过，进入产品二审。' : '二审已通过，报告已分发至对应部门。') : '报告已打回，提交人可修改后重新提交。', 'success');
+      toast(action === 'approve' ? (stage === 1 ? '第一审核已通过，进入第二审核。' : '第二审核已通过，报告已分发至对应部门。') : '报告已打回，提交人可修改后重新提交。', 'success');
     } catch (e) { error.textContent = e.message || '审核提交失败。'; error.classList.remove('hidden'); }
     finally { button.disabled = false; button.textContent = '确认审核'; }
   }
