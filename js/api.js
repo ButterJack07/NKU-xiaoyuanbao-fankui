@@ -94,9 +94,9 @@
       });
     };
     try {
-      return await extend(baseFields + ',review_note,reviewer_id');
+      return await extend(baseFields + ',review_note,reviewer_id,submission_source');
     } catch (error) {
-      if (/review_note|reviewer_id/i.test(error.message || '')) return extend(baseFields);
+      if (/review_note|reviewer_id|submission_source/i.test(error.message || '')) return extend(baseFields);
       throw error;
     }
   }

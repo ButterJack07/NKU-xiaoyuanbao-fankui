@@ -11,6 +11,8 @@
   var editingBug = null;
   var existingAttachments = [];
   var editBugId = new URLSearchParams(window.location.search).get('bug');
+  var productUploadMode = new URLSearchParams(window.location.search).get('source') === 'product' && !editBugId;
+  var productUploadReady = Promise.resolve();
 
   if (!form || !fileInput || !fileList || !submitButton) return;
   var reporterField = document.getElementById('reporterField');
@@ -35,6 +37,31 @@
 
   function formatBugCode(bug) {
     return bug && bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001';
+  }
+
+  async function initializeProductUpload() {
+    if (!productUploadMode) return;
+    try {
+      await window.PATCHWORK_READY;
+      var profile = window.PATCHWORK_PROFILE;
+      if (!profile || profile.department !== '产品') throw new Error('仅产品部门成员可以从产品端直接上传缺陷报告。');
+      var departmentSelect = form.elements.assignee_department;
+      departmentSelect.innerHTML = '<option value="产品">产品</option>';
+      departmentSelect.value = '产品';
+      departmentSelect.disabled = true;
+      document.getElementById('bugSubmitTitle').textContent = '产品端上传缺陷报告';
+      document.getElementById('bugSubmitDescription').textContent = '产品端提交的缺陷报告将直接分发至产品缺陷列表，并默认完成第一审核和第二审核。';
+      document.querySelector('.bug-submit-note').textContent = '产品端上传后直接分发至产品缺陷列表，默认完成第一审核和第二审核。';
+      var breadcrumb = document.querySelector('.workspace-breadcrumb');
+      if (breadcrumb) breadcrumb.innerHTML = '<a href="department-bugs.html?department=%E4%BA%A7%E5%93%81">产品</a><b>/</b><strong>上传缺陷报告</strong>';
+      var listLink = document.querySelector('#successModal a[href="bug-reports.html"]');
+      if (listLink) { listLink.href = 'department-bugs.html?department=' + encodeURIComponent('产品'); listLink.textContent = '查看产品缺陷列表'; }
+      document.getElementById('submitButton').querySelector('span').textContent = '提交并直接分发';
+      document.title = '校缘宝内测管理网站 · 产品端上传缺陷报告';
+    } catch (error) {
+      showToast(error.message || '无法启用产品端上传。', 'error');
+      submitButton.disabled = true;
+    }
   }
 
   function renderFiles() {
@@ -161,6 +188,8 @@
 
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
+    await productUploadReady;
+    if (productUploadMode && (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.department !== '产品')) return;
     if (!window.PatchworkAPI.isConfigured()) {
       showToast('请先配置 Supabase 数据库连接。', 'error');
       return;
@@ -179,7 +208,9 @@
       var data = Object.fromEntries(new FormData(form).entries());
       delete data.attachments;
       data.attachment_urls = attachmentUrls;
-      data.status = 'pending_review_1';
+      data.assignee_department = productUploadMode ? '产品' : data.assignee_department;
+      data.status = productUploadMode ? 'open' : 'pending_review_1';
+      data.submission_source = productUploadMode ? 'product' : 'test';
       var session = (await window.PATCHWORK_AUTH.getSession()).data.session;
       data.submitter_id = session.user.id;
 
@@ -207,14 +238,16 @@
         var created = await window.PatchworkAPI.createBug(data);
         bug = created && created[0];
         document.getElementById('successTitle').textContent = '缺陷报告已提交';
-        document.getElementById('successMessage').innerHTML = '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待第一审核。';
+        document.getElementById('successMessage').innerHTML = productUploadMode
+          ? '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已直接分发至产品缺陷列表，默认完成第一审核和第二审核。'
+          : '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待第一审核。';
       }
       successModal.classList.remove('hidden');
     } catch (error) {
       showToast(error.message || '提交失败，请稍后重试。', 'error');
     } finally {
       submitButton.disabled = false;
-      submitButton.querySelector('span').textContent = editingBug ? '重新提交缺陷报告' : '提交缺陷报告';
+      submitButton.querySelector('span').textContent = editingBug ? '重新提交缺陷报告' : productUploadMode ? '提交并直接分发' : '提交缺陷报告';
     }
   });
 
@@ -226,4 +259,5 @@
   });
 
   loadEditingBug();
+  productUploadReady = initializeProductUpload();
 })();

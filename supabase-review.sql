@@ -1,6 +1,5 @@
 -- 缺陷报告审核流程迁移（针对线上实际使用的 public.bug_reports 表）。
--- 说明：仓库里的 supabase.sql 建的是 public.bugs，但前端/保活实际使用 public.bug_reports。
--- 本文件可重复执行，全部操作都作用在 public.bug_reports 上。
+-- 说明：前端/保活实际使用 public.bug_reports。本文件可重复执行，全部操作都作用在该表上。
 -- 在 Supabase SQL Editor 中整段执行。
 
 create extension if not exists pgcrypto;
@@ -67,6 +66,13 @@ alter table public.bug_reports add column if not exists assignee_department text
 alter table public.bug_reports add column if not exists assignee_id uuid references public.developers(id) on delete set null;
 alter table public.bug_reports add column if not exists review_note text not null default '';
 alter table public.bug_reports add column if not exists reviewer_id uuid references auth.users(id);
+alter table public.bug_reports add column if not exists submission_source text not null default 'test';
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conrelid = 'public.bug_reports'::regclass and conname = 'bug_reports_submission_source_check') then
+    execute 'alter table public.bug_reports add constraint bug_reports_submission_source_check check (submission_source in (''test'', ''product''))';
+  end if;
+end $$;
 
 -- 3) 动态替换 status 约束（无论旧约束叫什么名字），并设置默认值。
 do $$
@@ -87,8 +93,7 @@ create index if not exists bug_reports_status_idx on public.bug_reports (status)
 create index if not exists bug_reports_created_at_idx on public.bug_reports (created_at desc);
 
 -- 4) 审核操作历史（重建为指向 bug_reports）。
-drop table if exists public.bug_review_events;
-create table public.bug_review_events (
+create table if not exists public.bug_review_events (
   id uuid primary key default gen_random_uuid(),
   bug_id uuid not null references public.bug_reports(id) on delete cascade,
   stage integer not null check (stage in (1, 2)),
@@ -98,17 +103,92 @@ create table public.bug_review_events (
   reviewer_name text not null default '',
   created_at timestamptz not null default now()
 );
-create index bug_review_events_bug_idx on public.bug_review_events (bug_id, created_at asc);
+
+-- 若表此前关联到旧 bugs 表，仅删除旧外键并添加正确外键，审核历史数据不删除。
+do $$
+declare fk record;
+begin
+  for fk in
+    select c.conname, c.confrelid::regclass as referenced_table
+    from pg_constraint c
+    where c.conrelid = 'public.bug_review_events'::regclass and c.contype = 'f'
+      and pg_get_constraintdef(c.oid) ilike '%bug_id%'
+  loop
+    if fk.referenced_table <> 'public.bug_reports'::regclass then
+      execute format('alter table public.bug_review_events drop constraint %I', fk.conname);
+    end if;
+  end loop;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.bug_review_events'::regclass and contype = 'f'
+      and confrelid = 'public.bug_reports'::regclass
+  ) then
+    execute 'alter table public.bug_review_events add constraint bug_review_events_bug_id_fkey foreign key (bug_id) references public.bug_reports(id) on delete cascade';
+  end if;
+end $$;
+
+create or replace function public.enforce_bug_report_submission_source()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.submission_source = 'product' then
+    if public.current_department() is distinct from '产品' or new.assignee_department <> '产品' or new.status <> 'open' then
+      raise exception '产品端直发仅允许产品部门账号提交至产品部门';
+    end if;
+  elsif new.submission_source <> 'test' or new.status <> 'pending_review_1' then
+    raise exception '测试端缺陷报告必须进入第一审核环节';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists bug_reports_submission_source_guard on public.bug_reports;
+create trigger bug_reports_submission_source_guard before insert on public.bug_reports
+for each row execute function public.enforce_bug_report_submission_source();
+
+create index if not exists bug_review_events_bug_idx on public.bug_review_events (bug_id, created_at asc);
 alter table public.bug_review_events enable row level security;
 
 drop policy if exists "team read bug review events" on public.bug_review_events;
+drop policy if exists "reviewer create bug review events" on public.bug_review_events;
 create policy "team read bug review events"
 on public.bug_review_events for select to authenticated using (true);
 
-drop policy if exists "reviewer create bug review events" on public.bug_review_events;
 create policy "reviewer create bug review events"
 on public.bug_review_events for insert to authenticated
 with check (reviewer_id = auth.uid() and public.is_reviewer() and stage = public.current_review_stage());
+
+-- 产品端提交视为两个审核环节默认通过，写入两条审核完成记录供详情页展示。
+create or replace function public.record_product_bug_auto_approvals()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.submission_source = 'product' and new.assignee_department = '产品' and new.status = 'open' then
+    insert into public.bug_review_events (bug_id, stage, action, note, reviewer_id, reviewer_name)
+    values
+      (new.id, 1, 'approve', '产品端上传，按规则默认完成第一审核并直接分发。', null, '系统自动通过（产品端上传）'),
+      (new.id, 2, 'approve', '产品端上传，按规则默认完成第二审核并直接分发。', null, '系统自动通过（产品端上传）');
+  end if;
+  return new;
+end $$;
+
+-- 更新此函数后，仅为此前已直发但没有审核历史的产品报告补齐默认通过记录。
+insert into public.bug_review_events (bug_id, stage, action, note, reviewer_id, reviewer_name)
+select b.id, stages.stage, 'approve',
+  '产品端上传，按规则默认完成' || case when stages.stage = 1 then '第一' else '第二' end || '审核并直接分发。',
+  null, '系统自动通过（产品端上传）'
+from public.bug_reports b
+cross join (values (1), (2)) as stages(stage)
+where b.submission_source = 'product'
+  and b.assignee_department = '产品'
+  and b.status in ('open', 'in_progress', 'resolved')
+  and not exists (
+    select 1 from public.bug_review_events e
+    where e.bug_id = b.id and e.stage = stages.stage and e.action = 'approve'
+  );
+
+drop trigger if exists bug_reports_product_auto_approvals on public.bug_reports;
+create trigger bug_reports_product_auto_approvals after insert on public.bug_reports
+for each row execute function public.record_product_bug_auto_approvals();
 
 -- 5) bug_reports 的 RLS 策略（读取 / 新建 / 更新 / 删除）。
 alter table public.bug_reports enable row level security;
@@ -122,7 +202,10 @@ create policy "internal create bug reports"
 on public.bug_reports for insert to authenticated
 with check (
   (submitter_id = auth.uid() or submitter_id is null)
-  and status = 'pending_review_1'
+  and (
+    (status = 'pending_review_1' and submission_source = 'test')
+    or (status = 'open' and submission_source = 'product' and public.current_department() = '产品' and assignee_department = '产品')
+  )
   and fix_plan = ''
   and assignee = ''
   and resolved_at is null

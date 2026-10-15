@@ -64,6 +64,14 @@
   ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus', 'myBugFilter'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
   var newBugReport = document.getElementById('newBugReport');
   if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = 'submit-bug.html'; });
+  var productUploadBug = document.getElementById('productUploadBug');
+  if (productUploadBug && departmentFromUrl === '产品') {
+    window.PATCHWORK_READY.then(function () {
+      if (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.department !== '产品') return;
+      productUploadBug.classList.remove('hidden');
+      productUploadBug.addEventListener('click', function () { window.location.href = 'submit-bug.html?source=product'; });
+    });
+  }
   document.getElementById('exportBugReports').addEventListener('click', exportReports);
   list.addEventListener('click', function (event) { var person = event.target.closest('[data-person-id]'); if (person) { event.stopPropagation(); openContactModal(person.dataset.personId, person.textContent, person.dataset.personType); return; } var button = event.target.closest('[data-bug-id]'); if (button) window.location.href = 'bug-detail.html?bug=' + encodeURIComponent(button.dataset.bugId) + (departmentFromUrl ? '&department=' + encodeURIComponent(departmentFromUrl) : ''); });
   if (departmentFromUrl && newBugReport) newBugReport.classList.add('hidden');

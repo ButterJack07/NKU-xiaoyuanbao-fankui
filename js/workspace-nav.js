@@ -89,13 +89,14 @@
         if (!isAllowed) link.removeAttribute('href');
       });
       var currentPage = window.location.pathname.split('/').pop() || 'index.html';
-      var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment));
+      var isProductUploadPage = currentPage === 'submit-bug.html' && new URLSearchParams(window.location.search).get('source') === 'product' && profile.department === '产品';
+      var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage;
       var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html'].includes(currentPage);
       if (isPublicWorkspacePage) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');
-      } else if (profile.department !== '测试' && (!isDepartmentPage || currentDepartment !== profile.department)) {
+      } else if (profile.department !== '测试' && !isProductUploadPage && (!isDepartmentPage || currentDepartment !== profile.department)) {
         window.location.replace('department-bugs.html?department=' + encodeURIComponent(profile.department));
       }
     }
