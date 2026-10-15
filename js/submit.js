@@ -45,13 +45,9 @@
       await window.PATCHWORK_READY;
       var profile = window.PATCHWORK_PROFILE;
       if (!profile || profile.department !== '产品') throw new Error('仅产品部门成员可以从产品端直接上传缺陷报告。');
-      var departmentSelect = form.elements.assignee_department;
-      departmentSelect.innerHTML = '<option value="产品">产品</option>';
-      departmentSelect.value = '产品';
-      departmentSelect.disabled = true;
       document.getElementById('bugSubmitTitle').textContent = '产品端上传缺陷报告';
-      document.getElementById('bugSubmitDescription').textContent = '产品端提交的缺陷报告将直接分发至产品缺陷列表，并默认完成第一审核和第二审核。';
-      document.querySelector('.bug-submit-note').textContent = '产品端上传后直接分发至产品缺陷列表，默认完成第一审核和第二审核。';
+      document.getElementById('bugSubmitDescription').textContent = '选择归属部门后直接分发至对应部门，默认完成第一审核和第二审核。';
+      document.querySelector('.bug-submit-note').textContent = '产品端上传后直接分发至所选部门，默认完成第一审核和第二审核。';
       var breadcrumb = document.querySelector('.workspace-breadcrumb');
       if (breadcrumb) breadcrumb.innerHTML = '<a href="department-bugs.html?department=%E4%BA%A7%E5%93%81">产品</a><b>/</b><strong>上传缺陷报告</strong>';
       var listLink = document.querySelector('#successModal a[href="bug-reports.html"]');
@@ -208,7 +204,6 @@
       var data = Object.fromEntries(new FormData(form).entries());
       delete data.attachments;
       data.attachment_urls = attachmentUrls;
-      data.assignee_department = productUploadMode ? '产品' : data.assignee_department;
       data.status = productUploadMode ? 'open' : 'pending_review_1';
       data.submission_source = productUploadMode ? 'product' : 'test';
       var session = (await window.PATCHWORK_AUTH.getSession()).data.session;
@@ -238,8 +233,12 @@
         var created = await window.PatchworkAPI.createBug(data);
         bug = created && created[0];
         document.getElementById('successTitle').textContent = '缺陷报告已提交';
+        if (productUploadMode) {
+          var productListLink = document.querySelector('#successModal a[href*="department-bugs.html"]');
+          if (productListLink) productListLink.href = 'department-bugs.html?department=' + encodeURIComponent(data.assignee_department);
+        }
         document.getElementById('successMessage').innerHTML = productUploadMode
-          ? '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已直接分发至产品缺陷列表，默认完成第一审核和第二审核。'
+          ? '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已直接分发至所选部门，默认完成第一审核和第二审核。'
           : '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待第一审核。';
       }
       successModal.classList.remove('hidden');

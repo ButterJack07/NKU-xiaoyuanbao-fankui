@@ -132,8 +132,8 @@ returns trigger language plpgsql security definer set search_path = public
 as $$
 begin
   if new.submission_source = 'product' then
-    if public.current_department() is distinct from '产品' or new.assignee_department <> '产品' or new.status <> 'open' then
-      raise exception '产品端直发仅允许产品部门账号提交至产品部门';
+    if public.current_department() is distinct from '产品' or new.assignee_department not in ('技术—前端', '技术—后端', '设计', '产品') or new.status <> 'open' then
+      raise exception '产品端直发仅允许产品部门账号提交至有效归属部门';
     end if;
   elsif new.submission_source <> 'test' or new.status <> 'pending_review_1' then
     raise exception '测试端缺陷报告必须进入第一审核环节';
@@ -162,7 +162,7 @@ create or replace function public.record_product_bug_auto_approvals()
 returns trigger language plpgsql security definer set search_path = public
 as $$
 begin
-  if new.submission_source = 'product' and new.assignee_department = '产品' and new.status = 'open' then
+  if new.submission_source = 'product' and new.status = 'open' then
     insert into public.bug_review_events (bug_id, stage, action, note, reviewer_id, reviewer_name)
     values
       (new.id, 1, 'approve', '产品端上传，按规则默认完成第一审核并直接分发。', null, '系统自动通过（产品端上传）'),
@@ -179,7 +179,6 @@ select b.id, stages.stage, 'approve',
 from public.bug_reports b
 cross join (values (1), (2)) as stages(stage)
 where b.submission_source = 'product'
-  and b.assignee_department = '产品'
   and b.status in ('open', 'in_progress', 'resolved')
   and not exists (
     select 1 from public.bug_review_events e
@@ -204,7 +203,7 @@ with check (
   (submitter_id = auth.uid() or submitter_id is null)
   and (
     (status = 'pending_review_1' and submission_source = 'test')
-    or (status = 'open' and submission_source = 'product' and public.current_department() = '产品' and assignee_department = '产品')
+    or (status = 'open' and submission_source = 'product' and public.current_department() = '产品' and assignee_department in ('技术—前端', '技术—后端', '设计', '产品'))
   )
   and fix_plan = ''
   and assignee = ''
