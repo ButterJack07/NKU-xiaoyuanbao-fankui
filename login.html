@@ -24,16 +24,65 @@
       </form>
     </section>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script><script src="js/auth.js"></script>
   <script>
-    document.getElementById('loginForm').addEventListener('submit', async function (event) {
-      event.preventDefault();
-      var form = event.currentTarget, button = form.querySelector('button'), error = document.getElementById('loginError');
-      button.disabled = true; button.textContent = '正在验证…'; error.classList.add('hidden');
-      try { var data = Object.fromEntries(new FormData(form).entries()); var result = await window.PATCHWORK_AUTH.signIn(data.username, data.password); if (result.error) throw result.error; window.location.replace(new URLSearchParams(window.location.search).get('next') || 'index.html'); }
-      catch (err) { error.textContent = '登录失败：' + (err.message || '账号或姓名不存在，或密码不正确。'); error.classList.remove('hidden'); button.disabled = false; button.textContent = '登录'; }
-    });
+    (function () {
+      var form = document.getElementById('loginForm');
+      var button = form.querySelector('button');
+      var error = document.getElementById('loginError');
+
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = function () { reject(new Error('无法加载 ' + src)); };
+          document.head.appendChild(script);
+        });
+      }
+
+      async function initialize() {
+        try {
+          try {
+            await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+          } catch (primaryError) {
+            await loadScript('https://unpkg.com/@supabase/supabase-js@2');
+          }
+          await loadScript('js/config.js');
+          await loadScript('js/auth.js');
+          if (!window.PATCHWORK_AUTH || typeof window.PATCHWORK_AUTH.signIn !== 'function') {
+            throw new Error('登录组件初始化失败，请检查 Supabase 配置后刷新页面。');
+          }
+          button.disabled = false;
+        } catch (loadError) {
+          error.textContent = '登录组件加载失败，请检查网络连接后刷新页面。';
+          error.classList.remove('hidden');
+          button.disabled = true;
+        }
+      }
+
+      button.disabled = true;
+      initialize();
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (!window.PATCHWORK_AUTH || typeof window.PATCHWORK_AUTH.signIn !== 'function') {
+          error.textContent = '登录组件尚未加载完成，请稍后重试或刷新页面。';
+          error.classList.remove('hidden');
+          return;
+        }
+        button.disabled = true; button.textContent = '正在验证…'; error.classList.add('hidden');
+        try {
+          var data = Object.fromEntries(new FormData(form).entries());
+          var result = await window.PATCHWORK_AUTH.signIn(data.username, data.password);
+          if (result.error) throw result.error;
+          window.location.replace(new URLSearchParams(window.location.search).get('next') || 'index.html');
+        } catch (err) {
+          error.textContent = '登录失败：' + (err.message || '账号或姓名不存在，或密码不正确。');
+          error.classList.remove('hidden');
+          button.disabled = false; button.textContent = '登录';
+        }
+      });
+    })();
   </script>
 </body>
 </html>
