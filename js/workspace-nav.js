@@ -90,9 +90,10 @@
       });
       var currentPage = window.location.pathname.split('/').pop() || 'index.html';
       var isProductUploadPage = currentPage === 'submit-bug.html' && new URLSearchParams(window.location.search).get('source') === 'product' && profile.department === '产品';
+      var isReviewDetail = currentPage === 'bug-detail.html' && Number(profile.review_stage) > 0;
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage;
       var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html'].includes(currentPage);
-      if (isPublicWorkspacePage) {
+      if (isPublicWorkspacePage || isReviewDetail) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');
