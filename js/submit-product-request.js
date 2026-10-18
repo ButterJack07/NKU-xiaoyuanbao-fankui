@@ -12,6 +12,11 @@
     button.disabled=true; button.querySelector('span').textContent='提交中…';
     try {
       var data=Object.fromEntries(new FormData(form).entries()); delete data.departments; delete data.reporter; data.assignee_department=deps.join(','); data.reporter=profile.full_name||profile.username; data.submitter_id=profile.id; data.request_type='product_change'; data.submission_source='product_change'; data.status='open'; data.assignee=''; data.fix_plan=''; data.resolved_at=null; data.attachment_urls=[];
+      // bug_reports also enforces the legacy required bug fields; map the matching request details into them.
+      data.description=data.change_reason;
+      data.repro_steps=data.before_logic;
+      data.expected_result=data.after_logic;
+      data.actual_result=data.exception_handling;
       for(var i=0;i<files.length;i++) data.attachment_urls.push(await window.PatchworkAPI.uploadFile(files[i]));
       var created=await window.PatchworkAPI.createBug(data), row=created&&created[0];
       window.alert('产品修改需求已分发。编号：' + window.PatchworkAPI.reportCode(row));
