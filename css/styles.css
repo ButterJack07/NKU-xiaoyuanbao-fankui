@@ -322,7 +322,7 @@ button.top-user-card { color: inherit; font: inherit; text-align: left; cursor: 
 .cases-table th { color: #171717; background: #fffaf0; font-weight: 700; }
 .cases-table td { border: 0; }
 .cases-table tbody tr + tr td { padding-top: 12px; }
-.case-file-name { font-weight: 600; }
+.case-file-name { max-width: 0; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .case-download-link { padding: 0; border: 0; color: #ed5a52; background: transparent; cursor: pointer; font-size: 12px; font-weight: 700; }
 .case-download-link.disabled { color: #b8b8b8; cursor: default; }
 .bug-status-done { color: #2d815d; font-weight: 700; }
