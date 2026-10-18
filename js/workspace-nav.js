@@ -26,7 +26,9 @@
       link.classList.toggle('active', !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
-      link.classList.toggle('active', link.dataset.department === department);
+      var profile = window.PATCHWORK_PROFILE;
+      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && profile && profile.department === '产品' && Boolean(profile.is_product_lead);
+      link.classList.toggle('active', link.dataset.department === department || productLeadHome);
     });
     topbar.querySelectorAll('[data-admin-only]').forEach(function (link) {
       link.classList.toggle('active', page === 'user-management.html');
@@ -111,9 +113,12 @@
     document.querySelectorAll('[data-review-only]').forEach(function (link) {
       link.classList.toggle('hidden', !profile || !(Number(profile.review_stage) > 0));
     });
+    var productDepartmentLink = topbar.querySelector('[data-department="产品"]');
+    var isProductLead = Boolean(profile && profile.department === '产品' && profile.is_product_lead);
+    if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html' : 'department-bugs.html?department=产品';
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
-      var productLead = profile.department === '产品' && Boolean(profile.is_product_lead);
+      var productLead = isProductLead;
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
       document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
         var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
