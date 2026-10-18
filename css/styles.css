@@ -1177,8 +1177,27 @@ body:not(.login-page) .top-user-avatar { background: linear-gradient(145deg, var
 .department-checkbox-group input { accent-color: #ef8d48; }
 .reviewEditModal .field textarea { resize: vertical; }
 
-.nav-data-board { display: flex; justify-content: center; align-items: center; min-height: 46px; margin: 12px auto 0; width: calc(100% - 48px); border: 1px solid #171717; border-radius: 999px; background: #fff; color: #171717; font-size: 14px; }
-.nav-data-board:hover, .nav-data-board.active { background: #fff1d0; }
+@media (min-width: 951px) {
+  body:not(.login-page) .topnav > .nav-data-board {
+    align-self: center;
+    width: calc(100% - 48px);
+    min-height: 46px;
+    margin: 62px auto 0;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #171717;
+    border-radius: 999px;
+    background: #fff;
+    color: #171717;
+    font-size: 14px;
+    text-align: center;
+    box-shadow: none;
+  }
+  body:not(.login-page) .topnav > .nav-data-board:hover { background: #fff; }
+  body:not(.login-page) .topnav > .nav-data-board.active { background: #FFF6E0; }
+}
 .overview-card { display: flex; align-items: center; justify-content: center; gap: 64px; margin: 24px 0; padding: 32px; background: #fff; border: 1px solid #e5ddd1; border-radius: 18px; }
 .progress-ring { flex-shrink: 0; width: 240px; height: 240px; border-radius: 50%; display: grid; place-items: center; background: #e7e7e7; }
 .progress-ring > div { width: 168px; height: 168px; border-radius: 50%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
