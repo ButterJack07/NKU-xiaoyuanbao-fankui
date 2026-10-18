@@ -290,7 +290,8 @@
     var denied = departmentFromUrl && currentProfile && currentProfile.role !== 'admin' && profileDepartment !== departmentFromUrl;
     if (accessDenied) accessDenied.classList.toggle('hidden', !denied);
     if (accessDeniedText && denied) accessDeniedText.textContent = '当前账号无权限访问' + departmentFromUrl + '的工作台。';
-    var productLeadHome = !departmentFromUrl && currentProfile && Boolean(currentProfile.is_product_lead) && (currentProfile.department === '产品' || currentProfile.role === 'admin');
+    var requestedWorkspace = new URLSearchParams(window.location.search).get('workspace');
+    var productLeadHome = !departmentFromUrl && currentProfile && Boolean(currentProfile.is_product_lead) && (currentProfile.department === '产品' || currentProfile.role === 'admin') && (currentProfile.role !== 'admin' || requestedWorkspace === 'product');
     if (productLeadServices) productLeadServices.classList.toggle('hidden', !productLeadHome);
     if (denied) {
       if (workspaceHeading) workspaceHeading.classList.add('hidden');

@@ -8,13 +8,16 @@
   function renderNavigation() {
     if (!topbar) return;
     var version = window.PATCHWORK_CONFIG && window.PATCHWORK_CONFIG.version ? window.PATCHWORK_CONFIG.version : '1.1.2';
+    var navProfile = window.PATCHWORK_PROFILE;
+    var navProductLead = Boolean(navProfile && navProfile.is_product_lead && (navProfile.department === '产品' || navProfile.role === 'admin'));
+    var homeHref = navProductLead && navProfile.role === 'admin' ? 'index.html?workspace=test' : 'index.html';
     topbar.innerHTML = '<a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页"><span><strong>校缘宝内测管理网站</strong><small class="brand-version">' + version + '</small></span></a>' +
       '<nav class="topnav" aria-label="主导航"><div class="nav-menu-card">' +
-      '<a data-nav="home" class="nav-test-root" href="index.html">测试</a>' +
+      '<a data-nav="home" class="nav-test-root" href="' + homeHref + '">测试</a>' +
       '<a data-department="技术—前端" href="department-bugs.html?department=技术—前端">技术—前端</a>' +
       '<a data-department="技术—后端" href="department-bugs.html?department=技术—后端">技术—后端</a>' +
       '<a data-department="设计" href="department-bugs.html?department=设计">设计</a>' +
-      '<a data-department="产品" href="department-bugs.html?department=产品">产品</a>' +
+      '<a data-department="产品" href="' + (navProductLead ? 'index.html?workspace=product' : 'department-bugs.html?department=产品') + '">产品</a>' +
       '<a data-review-only class="review-nav-link hidden" href="review-bugs.html">待审核</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
       '</div><a class="nav-notice" href="announcements.html">公告信息</a><a class="nav-data-board" href="data-dashboard.html">数据看板</a><section class="nav-daily-quote" aria-label="每日短句"><blockquote id="dailyQuoteText">愿每一份努力，都能汇成前进的力量。</blockquote><cite id="dailyQuoteAuthor">— 校缘宝</cite></section></nav>' +
@@ -23,12 +26,15 @@
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
       var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
       var productLead = window.PATCHWORK_PROFILE && window.PATCHWORK_PROFILE.department === '产品' && window.PATCHWORK_PROFILE.is_product_lead;
-      link.classList.toggle('active', !productLead && !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
+      var workspace = new URLSearchParams(window.location.search).get('workspace');
+      var adminTestWorkspace = window.PATCHWORK_PROFILE && window.PATCHWORK_PROFILE.role === 'admin' && workspace === 'test';
+      link.classList.toggle('active', ((!productLead || adminTestWorkspace) && !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home'));
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
       var profile = window.PATCHWORK_PROFILE;
-      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && profile && Boolean(profile.is_product_lead) && (profile.department === '产品' || profile.role === 'admin');
-      link.classList.toggle('active', link.dataset.department === department || productLeadHome);
+      var workspace = new URLSearchParams(window.location.search).get('workspace');
+      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && profile && Boolean(profile.is_product_lead) && (profile.department === '产品' || profile.role === 'admin') && workspace === 'product';
+      link.classList.toggle('active', link.dataset.department === department || productLeadHome || (link.dataset.department === '产品' && page === 'index.html' && workspace === 'product'));
     });
     topbar.querySelectorAll('[data-admin-only]').forEach(function (link) {
       link.classList.toggle('active', page === 'user-management.html');
@@ -115,14 +121,17 @@
     });
     var productDepartmentLink = topbar.querySelector('[data-department="产品"]');
     var isProductLead = Boolean(profile && profile.is_product_lead && (profile.department === '产品' || profile.role === 'admin'));
-    if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html' : 'department-bugs.html?department=产品';
+    var homeLink = topbar.querySelector('[data-nav="home"]');
+    var workspace = new URLSearchParams(window.location.search).get('workspace');
+    if (homeLink && isProductLead && profile.role === 'admin') homeLink.href = 'index.html?workspace=test';
+    if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html?workspace=product' : 'department-bugs.html?department=产品';
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
       var productLead = isProductLead;
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
       document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
         var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
-        if (link.dataset.nav === 'home' && productLead) isAllowed = true;
+        if (link.dataset.nav === 'home' && productLead) isAllowed = profile.department === '测试';
         if (link.hasAttribute('data-admin-only')) isAllowed = false;
         if (link.hasAttribute('data-review-only')) isAllowed = Number(profile.review_stage) > 0;
         link.classList.toggle('nav-disabled', !isAllowed);
