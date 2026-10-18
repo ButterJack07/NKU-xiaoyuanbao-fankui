@@ -31,7 +31,7 @@
     var visible = rows.filter(function (bug) { return allowed.indexOf(bug.status) !== -1 && (!query || String(bug.title || '').toLowerCase().includes(query)); });
     list.innerHTML = visible.map(function (bug) {
       var importance = { heavy: '严重', medium: '一般', light: '轻微' }[bug.importance] || bug.importance || '—';
-      var code = bug.bug_no ? 'BUG-' + String(bug.bug_no).padStart(4, '0') : 'BUG-0001';
+      var code = window.PatchworkAPI.reportCode(bug);
       return '<tr><td>' + code + '</td><td class="case-file-name">' + esc(bug.title) + '</td><td>' + esc(profileName(bug.submitter_id, bug.reporter)) + '</td><td>' + esc(bug.assignee_department || '—') + '</td><td class="' + (bug.importance === 'heavy' ? 'department-severe' : '') + '">' + esc(importance) + '</td><td>' + esc(STAGE_TEXT[bug.status] || bug.status) + '</td><td>' + formatDate(bug.created_at) + '</td><td><button class="case-action-button" type="button" data-review-id="' + esc(bug.id) + '">审核</button></td></tr>';
     }).join('');
     document.getElementById('reviewEmpty').classList.toggle('hidden', visible.length !== 0);

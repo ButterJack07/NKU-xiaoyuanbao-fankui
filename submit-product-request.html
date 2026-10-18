@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>提交产品修改需求 · 校缘宝</title><link rel="stylesheet" href="css/styles.css"></head>
+<body class="submit-page"><div class="noise" aria-hidden="true"></div><header class="topbar"></header>
+<main class="submit-shell bug-submit-shell"><div class="workspace-breadcrumb"><a href="index.html">产品负责人工作台</a><b>/</b><a href="product-change-requests.html">产品修改需求</a><b>/</b><strong>提交需求</strong></div>
+  <section class="cases-title bug-submit-title"><p class="eyebrow">PRODUCT / NEW CHANGE REQUEST</p><h1>产品修改需求报告</h1><p>提交后直接分发到所选部门，所有登录成员均可查看，各部门分别跟进。</p></section>
+  <section class="form-card bug-submit-card"><div class="bug-form-title"><h2>需求内容</h2><span class="required-note"><i>*</i> 为必填项</span></div><p id="requestError" class="login-error hidden"></p>
+    <form id="productRequestForm"><input name="reporter" id="requestReporter" type="hidden">
+      <label class="field field-full"><span>需求标题 <i>*</i></span><input name="title" required maxlength="120" placeholder="简要概括本次产品修改"></label>
+      <label class="field field-full"><span>涉及模块 <i>*</i></span><textarea name="module" rows="2" required maxlength="1000" placeholder="具体的功能模块或页面，例如：首页视频流"></textarea></label>
+      <label class="field field-full"><span>更改原因 <i>*</i></span><textarea name="change_reason" rows="3" required maxlength="3000" placeholder="业务背景或目的，例如：提升留存 / 修复 Bug"></textarea></label>
+      <label class="field field-full"><span>改前现状 <i>*</i></span><textarea name="before_logic" rows="4" required maxlength="3000" placeholder="目前的逻辑是什么样的"></textarea></label>
+      <label class="field field-full"><span>改后逻辑 <i>*</i></span><textarea name="after_logic" rows="5" required maxlength="4000" placeholder="新的规则、交互或操作流程"></textarea></label>
+      <label class="field field-full"><span>异常处理 <i>*</i></span><textarea name="exception_handling" rows="3" required maxlength="3000" placeholder="网络差、数据为空、越权操作时如何提示"></textarea></label>
+      <label class="field field-full"><span>影响范围 <i>*</i></span><textarea name="impact_scope" rows="3" required maxlength="3000" placeholder="是否会影响其他页面或后端接口"></textarea></label>
+      <div class="field-row"><label class="field"><span>期望时间 <i>*</i></span><input name="desired_date" type="date" required></label><fieldset class="field department-check-field"><legend>归属部门 <i>*</i>（可多选）</legend><div class="department-checkbox-group"><label><input type="checkbox" name="departments" value="技术—前端"><span>技术—前端</span></label><label><input type="checkbox" name="departments" value="技术—后端"><span>技术—后端</span></label><label><input type="checkbox" name="departments" value="设计"><span>设计</span></label><label><input type="checkbox" name="departments" value="产品"><span>产品</span></label></div></fieldset></div>
+      <label class="field field-full"><span>附件（选填）</span><label id="requestDropzone" class="upload-zone"><input id="requestAttachments" type="file" multiple><span class="upload-icon">↑</span><strong>上传需求原型、截图或补充材料</strong><small>每个文件最大 10 MB</small></label><div id="requestFileList" class="file-list"></div></label>
+      <div class="form-actions"><button id="requestSubmitButton" class="button button-primary" type="submit"><span>提交并分发</span></button></div>
+    </form>
+  </section>
+</main><div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/workspace-nav.js?v=product-requests-1"></script><script src="js/api.js?v=product-requests-1"></script><script src="js/submit-product-request.js"></script></body></html>

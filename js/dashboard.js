@@ -281,6 +281,7 @@
     var breadcrumbWrap = document.getElementById('workspaceBreadcrumbWrap');
     var listTitle = document.getElementById('departmentListTitle');
     var testGroupServices = document.getElementById('testGroupServices');
+    var productLeadServices = document.getElementById('productLeadServices');
     var departmentCaseShell = document.getElementById('departmentCaseShell');
     var workspaceHeading = document.getElementById('workspaceHeading');
     var accessDenied = document.getElementById('accessDenied');
@@ -289,6 +290,8 @@
     var denied = departmentFromUrl && currentProfile && currentProfile.role !== 'admin' && profileDepartment !== departmentFromUrl;
     if (accessDenied) accessDenied.classList.toggle('hidden', !denied);
     if (accessDeniedText && denied) accessDeniedText.textContent = '当前账号无权限访问' + departmentFromUrl + '的工作台。';
+    var productLeadHome = !departmentFromUrl && currentProfile && currentProfile.department === '产品' && Boolean(currentProfile.is_product_lead);
+    if (productLeadServices) productLeadServices.classList.toggle('hidden', !productLeadHome);
     if (denied) {
       if (workspaceHeading) workspaceHeading.classList.add('hidden');
       if (testGroupServices) testGroupServices.classList.add('hidden');
@@ -331,14 +334,14 @@
       if (departmentCaseTitle) departmentCaseTitle.textContent = departmentFromUrl + '缺陷列表';
       if (departmentCaseDescription) departmentCaseDescription.textContent = departmentDescriptions[departmentFromUrl] || '仅显示当前归属为' + departmentFromUrl + '的缺陷；本部门成员可查看、指定跟进人与处理；转组仅本部门组长、超级管理员可操作。';
     } else {
-      if (testGroupServices) testGroupServices.classList.remove('hidden');
+      if (testGroupServices) testGroupServices.classList.toggle('hidden', productLeadHome);
       if (departmentCaseShell) departmentCaseShell.classList.add('hidden');
       if (workspaceHeading) workspaceHeading.classList.remove('hidden');
-      title.textContent = '测试组首页';
-      description.textContent = '测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。';
-      eyebrow.textContent = 'TEST GROUP / WORKSPACE';
-      role.textContent = '内部协作空间';
-      breadcrumb.textContent = '测试组首页';
+      title.textContent = productLeadHome ? '产品负责人工作台' : '测试组首页';
+      description.textContent = productLeadHome ? '产品负责人可查看产品缺陷并提交、跟进跨部门产品修改需求。' : '测试组所有成员均可查看测试用例与BUG；两条业务线仍相对独立。';
+      eyebrow.textContent = productLeadHome ? 'PRODUCT LEAD / WORKSPACE' : 'TEST GROUP / WORKSPACE';
+      role.textContent = productLeadHome ? '产品负责人空间' : '内部协作空间';
+      breadcrumb.textContent = productLeadHome ? '产品负责人工作台' : '测试组首页';
       if (breadcrumbWrap) breadcrumbWrap.classList.add('hidden');
       if (listTitle) listTitle.textContent = 'Bug 列表';
     }

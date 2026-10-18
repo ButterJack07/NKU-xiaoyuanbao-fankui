@@ -2,6 +2,7 @@
 begin;
 
 alter table public.bug_reports add column if not exists department_progress jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists is_product_lead boolean not null default false;
 
 create or replace function public.sync_bug_department_progress()
 returns trigger language plpgsql security definer set search_path = public
@@ -79,6 +80,17 @@ begin
   end if;
   return new;
 end $$;
+
+-- 重跑迁移时也将新增的产品修改需求类别初始化进同一部门处理流程。
+update public.bug_reports b
+set department_progress = (
+  select coalesce(jsonb_object_agg(dep, coalesce(b.department_progress -> dep,
+    jsonb_build_object('status', case when b.status in ('open','in_progress','resolved') then b.status else 'open' end,
+      'assignee_id', b.assignee_id, 'assignee', coalesce(b.assignee, ''), 'note', coalesce(b.transfer_note, '')))), '{}'::jsonb)
+  from unnest(string_to_array(b.assignee_department, ',')) as departments(dep) where dep <> ''
+)
+where b.request_type = 'product_change'
+  and exists (select 1 from unnest(string_to_array(b.assignee_department, ',')) as departments(dep) where dep <> '' and not b.department_progress ? dep);
 
 create table if not exists public.bug_department_changes (
   id uuid primary key default gen_random_uuid(),

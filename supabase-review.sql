@@ -6,6 +6,7 @@ create extension if not exists pgcrypto;
 
 -- 1) 审核人配置：0=非审核人，1=第一审核，2=第二审核，由超级管理员在用户管理中设置。
 alter table public.profiles add column if not exists review_stage integer not null default 0;
+alter table public.profiles add column if not exists is_product_lead boolean not null default false;
 alter table public.profiles drop constraint if exists profiles_review_stage_check;
 alter table public.profiles add constraint profiles_review_stage_check check (review_stage in (0, 1, 2));
 
@@ -68,6 +69,19 @@ alter table public.bug_reports add column if not exists assignee_id uuid referen
 alter table public.bug_reports add column if not exists review_note text not null default '';
 alter table public.bug_reports add column if not exists reviewer_id uuid references auth.users(id);
 alter table public.bug_reports add column if not exists submission_source text not null default 'test';
+alter table public.bug_reports add column if not exists request_type text not null default 'bug';
+create sequence if not exists public.product_request_no_seq;
+alter table public.bug_reports add column if not exists product_request_no bigint;
+alter table public.bug_reports alter column product_request_no set default nextval('public.product_request_no_seq');
+select setval('public.product_request_no_seq', greatest(coalesce((select max(product_request_no) from public.bug_reports), 0), 0) + 1, false);
+alter table public.bug_reports add column if not exists request_code text;
+alter table public.bug_reports add column if not exists change_reason text not null default '';
+alter table public.bug_reports add column if not exists before_logic text not null default '';
+alter table public.bug_reports add column if not exists after_logic text not null default '';
+alter table public.bug_reports add column if not exists exception_handling text not null default '';
+alter table public.bug_reports add column if not exists impact_scope text not null default '';
+alter table public.bug_reports add column if not exists desired_date date;
+create unique index if not exists bug_reports_product_request_no_key on public.bug_reports (product_request_no) where request_type = 'product_change';
 alter table public.bug_reports alter column assignee_department drop not null;
 -- 替换旧的单部门校验，允许逗号分隔的多个归属部门。
 alter table public.bug_reports drop constraint if exists bug_reports_assignee_department_check;
@@ -79,9 +93,8 @@ alter table public.bug_reports add constraint bug_reports_assignment_check check
 );
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conrelid = 'public.bug_reports'::regclass and conname = 'bug_reports_submission_source_check') then
-    execute 'alter table public.bug_reports add constraint bug_reports_submission_source_check check (submission_source in (''test'', ''product''))';
-  end if;
+  alter table public.bug_reports drop constraint if exists bug_reports_submission_source_check;
+  alter table public.bug_reports add constraint bug_reports_submission_source_check check (submission_source in ('test', 'product', 'product_change')) not valid;
 end $$;
 
 -- 3) 动态替换 status 约束（无论旧约束叫什么名字），并设置默认值。
@@ -149,6 +162,15 @@ begin
       or new.status <> 'open' then
       raise exception '产品端直发仅允许产品部门账号提交至有效归属部门';
     end if;
+  elsif new.submission_source = 'product_change' then
+    if public.current_department() is distinct from '产品' and not public.is_admin() then
+      raise exception '仅产品负责人或超级管理员可提交产品修改需求';
+    end if;
+    if new.request_type <> 'product_change' or new.assignee_department is null or new.assignee_department = '' or new.status <> 'open' then
+      raise exception '产品修改需求必须使用 PRO 编号、至少选择一个部门并直接分发';
+    end if;
+    if new.product_request_no is null then new.product_request_no := nextval(pg_get_serial_sequence('public.bug_reports','product_request_no')); end if;
+    new.request_code := 'PRO-' || lpad(new.product_request_no::text, 4, '0');
   elsif new.submission_source is distinct from 'test' or new.status <> 'pending_review_1' then
     raise exception '测试端缺陷报告必须进入第一审核环节';
   end if;
@@ -191,12 +213,12 @@ create policy "reviewer create bug review events"
 on public.bug_review_events for insert to authenticated
 with check (reviewer_id = auth.uid() and public.is_reviewer() and stage = public.current_review_stage());
 
--- 产品端提交视为两个审核环节默认通过，写入两条审核完成记录供详情页展示。
+-- 产品端直接分发的缺陷报告和产品修改需求，均记为默认完成两级审核。
 create or replace function public.record_product_bug_auto_approvals()
 returns trigger language plpgsql security definer set search_path = public
 as $$
 begin
-  if new.submission_source = 'product' and new.status = 'open' then
+  if new.submission_source in ('product', 'product_change') and new.status = 'open' then
   insert into public.bug_review_events (bug_id, stage, action, note, reviewer_id, reviewer_name)
   values
       (new.id, 1, 'approve', '产品端上传，按规则默认完成第一审核并直接分发至 ' || new.assignee_department || '。', null, '系统自动通过（产品端上传）'),
@@ -238,6 +260,7 @@ with check (
   and (
     (status = 'pending_review_1' and submission_source = 'test')
     or (status = 'open' and submission_source = 'product' and (public.current_department() = '产品' or public.is_admin()) and assignee_department <> '' and string_to_array(assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[])
+    or (status = 'open' and submission_source = 'product_change' and ((public.current_department() = '产品' and exists(select 1 from public.profiles p where p.id=auth.uid() and p.is_product_lead)) or public.is_admin()) and request_type = 'product_change' and assignee_department <> '' and string_to_array(assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[])
   )
   and fix_plan = ''
   and assignee = ''

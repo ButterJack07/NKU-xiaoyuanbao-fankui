@@ -22,6 +22,7 @@
 
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
       var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
+      var productLead = window.PATCHWORK_PROFILE && window.PATCHWORK_PROFILE.department === '产品' && window.PATCHWORK_PROFILE.is_product_lead;
       link.classList.toggle('active', !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
@@ -112,9 +113,11 @@
     });
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
+      var productLead = profile.department === '产品' && Boolean(profile.is_product_lead);
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
       document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
         var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
+        if (link.dataset.nav === 'home' && productLead) isAllowed = true;
         if (link.hasAttribute('data-admin-only')) isAllowed = false;
         if (link.hasAttribute('data-review-only')) isAllowed = Number(profile.review_stage) > 0;
         link.classList.toggle('nav-disabled', !isAllowed);
@@ -126,8 +129,9 @@
       var isReviewerEditPage = currentPage === 'submit-bug.html' && Boolean(new URLSearchParams(window.location.search).get('bug')) && Number(profile.review_stage) > 0;
       var isReviewDetail = currentPage === 'bug-detail.html' && Number(profile.review_stage) > 0;
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage || isReviewerEditPage;
-      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html', 'data-dashboard.html'].includes(currentPage);
-      if (isPublicWorkspacePage || isReviewDetail) {
+      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html', 'data-dashboard.html', 'product-change-requests.html', 'product-change-detail.html'].includes(currentPage);
+      var isProductLeadPage = productLead && ['index.html', 'product-change-requests.html', 'product-change-detail.html', 'submit-product-request.html'].includes(currentPage);
+      if (isPublicWorkspacePage || isReviewDetail || isProductLeadPage) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');

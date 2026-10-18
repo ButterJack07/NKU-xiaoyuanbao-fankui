@@ -12,7 +12,7 @@
     var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     var pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    list.innerHTML = pageRows.map(function (row) { var action = '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
+    list.innerHTML = pageRows.map(function (row) { var action = '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td>' + (row.is_product_lead ? '是' : '否') + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
     list.querySelectorAll('.user-edit-link').forEach(function (button) { button.addEventListener('click', function () { openEditUser(button.dataset.userId); }); });
     list.querySelectorAll('.user-reset-link').forEach(function (button) { button.addEventListener('click', function () { openResetPassword(button.dataset.resetUserId); }); });
     list.querySelectorAll('.user-name-link').forEach(function (button) { button.addEventListener('click', function () { openProfileInfo(button.dataset.profileId); }); });
@@ -25,7 +25,7 @@
   async function load() {
     await window.PATCHWORK_READY;
     if (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.role !== 'admin') { window.location.replace('index.html'); return; }
-    var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,review_stage,created_at').order('created_at', { ascending: true });
+     var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,created_at').order('created_at', { ascending: true });
     if (result.error) throw result.error;
     rows = result.data || []; render();
   }
@@ -50,6 +50,7 @@
     form.role.value = row.role;
     form.active.value = String(row.active);
     if (form.review_stage) form.review_stage.value = String(Number(row.review_stage) || 0);
+    if (form.is_product_lead) form.is_product_lead.value = String(Boolean(row.is_product_lead));
     form.role.disabled = isAdminRow;
     document.getElementById('editUserIdentity').textContent = '账号：' + row.username + '｜' + row.full_name;
     document.getElementById('editUserError').classList.add('hidden');
@@ -89,6 +90,7 @@
     if (!row) return;
     var payload = { active: form.active.value === 'true' };
     payload.review_stage = Number(form.review_stage && form.review_stage.value) || 0;
+    payload.is_product_lead = form.is_product_lead && form.is_product_lead.value === 'true';
     if (row.role === 'admin') { payload.role = 'admin'; payload.department = row.department; }
     else { payload.department = form.department.value; payload.role = form.role.value; }
     error.classList.add('hidden'); button.disabled = true; button.textContent = '保存中…';

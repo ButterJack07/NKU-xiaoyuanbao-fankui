@@ -94,8 +94,16 @@
       });
     };
     try {
-      return await extend(baseFields + ',review_note,reviewer_id,submission_source,department_progress');
+      return await extend(baseFields + ',review_note,reviewer_id,submission_source,department_progress,request_type,product_request_no,request_code,change_reason,before_logic,after_logic,exception_handling,impact_scope,desired_date');
     } catch (error) {
+      if (/request_code/i.test(error.message || '')) {
+        try { return await extend(baseFields + ',review_note,reviewer_id,submission_source,department_progress,request_type,product_request_no,change_reason,before_logic,after_logic,exception_handling,impact_scope,desired_date'); }
+        catch (nested) { if (/product_request_no|request_type|change_reason|before_logic|after_logic|exception_handling|impact_scope|desired_date/i.test(nested.message || '')) throw new Error('请先执行产品修改需求数据库迁移。'); throw nested; }
+      }
+      if (/product_request_no|request_type|change_reason|before_logic|after_logic|exception_handling|impact_scope|desired_date/i.test(error.message || '')) {
+        try { return await extend(baseFields + ',review_note,reviewer_id,submission_source,department_progress'); }
+        catch (nested) { if (/department_progress/i.test(nested.message || '')) throw new Error('请先执行 supabase-department-progress.sql，启用部门独立处理状态。'); throw nested; }
+      }
       if (/department_progress/i.test(error.message || '')) throw new Error('请先执行 supabase-department-progress.sql，启用部门独立处理状态。');
       if (/review_note|reviewer_id|submission_source/i.test(error.message || '')) return extend(baseFields);
       throw error;
@@ -129,6 +137,11 @@
 
   async function listDepartmentChanges(bugId) {
     return request('/rest/v1/bug_department_changes?select=*&bug_id=eq.' + encodeURIComponent(bugId) + '&order=created_at.desc', { method: 'GET', headers: headers() });
+  }
+
+  function reportCode(bug) {
+    if (bug && bug.request_type === 'product_change') return bug.request_code || 'PRO-' + String(bug.product_request_no || bug.bug_no || '').padStart(4, '0');
+    return 'BUG-' + String(bug && bug.bug_no || 0).padStart(4, '0');
   }
 
   async function deleteBug(id) {
@@ -188,10 +201,11 @@
   }
 
   async function listProfiles() {
-    var baseFields = 'id,username,full_name,department,role,active,qq,wechat,phone,contact_time';
+    var baseFields = 'id,username,full_name,employee_no,department,role,active,qq,wechat,phone,contact_time';
     try {
-      return await request('/rest/v1/profiles?select=' + baseFields + ',review_stage&active=eq.true', { method: 'GET', headers: headers() });
+      return await request('/rest/v1/profiles?select=' + baseFields + ',review_stage,is_product_lead&active=eq.true', { method: 'GET', headers: headers() });
     } catch (error) {
+      if (/is_product_lead/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + ',review_stage&active=eq.true', { method: 'GET', headers: headers() });
       if (/review_stage/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + '&active=eq.true', { method: 'GET', headers: headers() });
       throw error;
     }
@@ -249,7 +263,7 @@
   }
 
   async function updateProfile(id, patch) {
-    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,review_stage,created_at').single();
+    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,created_at').single();
     if (result.error) throw result.error;
     return result.data;
   }
@@ -270,6 +284,7 @@
     departmentView: departmentView,
     updateDepartmentProgress: updateDepartmentProgress,
     listDepartmentChanges: listDepartmentChanges,
+    reportCode: reportCode,
     deleteBug: deleteBug,
     listReviewEvents: listReviewEvents,
     createReviewEvent: createReviewEvent,
