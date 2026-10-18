@@ -23,7 +23,7 @@
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
       var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
       var productLead = window.PATCHWORK_PROFILE && window.PATCHWORK_PROFILE.department === '产品' && window.PATCHWORK_PROFILE.is_product_lead;
-      link.classList.toggle('active', !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
+      link.classList.toggle('active', !productLead && !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
       var profile = window.PATCHWORK_PROFILE;
