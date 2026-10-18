@@ -1217,7 +1217,20 @@ body:not(.login-page) .top-user-avatar { background: linear-gradient(145deg, var
 .overview-table-wrap { overflow-x: auto; }
 .overview-table { min-width: 800px; }
 .overview-table th:nth-child(2) { width: 24%; }
+.request-department-card { margin-top: 12px; padding: 18px 20px; border: 1px solid #eee2d2; border-radius: 15px; background: linear-gradient(135deg, #fffdfa 0%, #fff7ed 100%); box-shadow: 0 7px 20px rgba(80,55,31,.045); }
+.request-department-card header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #efe5d9; }
+.request-department-identity { display: flex; align-items: center; gap: 11px; }
+.request-department-mark { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 12px; background: #fff0df; color: #bd642d; font-weight: 700; }
+.request-department-identity strong { display: block; color: #29241f; font-size: 15px; }
+.request-department-identity small { display: block; margin-top: 3px; color: #938879; font-size: 11px; }
+.request-department-meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 14px 0; }
+.request-department-meta > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.request-department-meta span,.request-department-note > span { color: #8c8174; font-size: 12px; }
+.request-department-meta strong { color: #383129; font-size: 13px; font-weight: 600; text-align: right; }
+.request-department-note { padding: 11px 13px; border-radius: 10px; background: rgba(255,255,255,.8); }
+.request-department-note p { margin: 5px 0 0; color: #51483f; font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .nav-daily-quote { width: calc(100% - 40px); max-width: 190px; margin: 18px auto 0; padding: 0; border: 0; background: transparent; color: #fff; text-align: center; }
 .nav-daily-quote blockquote { margin: 0; color: #fff; font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 13.3px; font-style: italic; font-weight: 500; line-height: 1.9; overflow-wrap: anywhere; text-shadow: 0 1px 4px rgba(77, 39, 20, .5); }
 .nav-daily-quote cite { display: block; min-height: 1em; margin-top: 7px; color: rgba(255,255,255,.85); font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 10.45px; font-style: italic; line-height: 1.5; text-shadow: 0 1px 3px rgba(77, 39, 20, .45); }
 @media (max-width: 650px) { .overview-card { flex-direction: column; gap: 28px; } .overview-legend { width: 100%; } .nav-data-board { width: auto; margin: 0 8px; padding: 0 12px; } }
+@media (max-width: 520px) { .request-department-card { padding: 15px; } .request-department-meta { grid-template-columns: 1fr; gap: 8px; } }
