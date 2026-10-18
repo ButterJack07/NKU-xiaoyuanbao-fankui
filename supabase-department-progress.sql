@@ -20,9 +20,9 @@ begin
     previous := old.department_progress;
     if auth.uid() is not null and new.department_progress is distinct from old.department_progress then
       if actor.id is null then raise exception '账号无效'; end if;
-      if actor.role <> 'admin' then
+      if actor.role <> 'admin' and actor.role <> 'leader' then
         for dep in select jsonb_object_keys(coalesce(old.department_progress, '{}') || coalesce(new.department_progress, '{}')) loop
-          if dep <> actor.department and (new.department_progress -> dep) is distinct from (old.department_progress -> dep) then
+          if (actor.role <> 'leader' or dep <> actor.department) and (new.department_progress -> dep) is distinct from (old.department_progress -> dep) then
             raise exception '只能修改自己部门的处理信息';
           end if;
         end loop;
@@ -31,6 +31,13 @@ begin
         end if;
         if actor.role <> 'leader' and coalesce(old.department_progress -> actor.department ->> 'assignee_id','') <> actor.id::text then
           raise exception '仅本部门组长或本部门跟进人可更新处理信息';
+        end if;
+        if actor.role = 'leader' then
+          for dep in select jsonb_object_keys(coalesce(old.department_progress, '{}') || coalesce(new.department_progress, '{}')) loop
+            if dep <> actor.department and (new.department_progress -> dep -> 'assignee_id') is distinct from (old.department_progress -> dep -> 'assignee_id') then
+              raise exception '组长只能指定或修改自己部门的跟进人';
+            end if;
+          end loop;
         end if;
         if actor.role <> 'leader' and (
           (new.department_progress -> actor.department -> 'assignee_id') is distinct from (old.department_progress -> actor.department -> 'assignee_id')
@@ -80,8 +87,10 @@ create table if not exists public.bug_department_changes (
   next_departments text not null,
   note text not null default '',
   changed_by uuid references auth.users(id),
+  changed_by_name text not null default '',
   created_at timestamptz not null default now()
 );
+alter table public.bug_department_changes add column if not exists changed_by_name text not null default '';
 alter table public.bug_department_changes enable row level security;
 drop policy if exists "team read department changes" on public.bug_department_changes;
 create policy "team read department changes" on public.bug_department_changes for select to authenticated using (true);
@@ -89,10 +98,12 @@ create policy "team read department changes" on public.bug_department_changes fo
 create or replace function public.log_bug_department_change()
 returns trigger language plpgsql security definer set search_path = public
 as $$
+declare changer_name text;
 begin
   if new.assignee_department is distinct from old.assignee_department then
-    insert into public.bug_department_changes (bug_id, previous_departments, next_departments, note, changed_by)
-    values (new.id, coalesce(old.assignee_department,''), coalesce(new.assignee_department,''), coalesce(new.transfer_note,''), auth.uid());
+    select coalesce(full_name, username, '成员') into changer_name from public.profiles where id = auth.uid();
+    insert into public.bug_department_changes (bug_id, previous_departments, next_departments, note, changed_by, changed_by_name)
+    values (new.id, coalesce(old.assignee_department,''), coalesce(new.assignee_department,''), coalesce(new.transfer_note,''), auth.uid(), coalesce(changer_name, '成员'));
   end if;
   return new;
 end $$;
@@ -128,11 +139,13 @@ begin
   select * into b from public.bug_reports where id = p_bug_id for update;
   if not found then raise exception '报告不存在'; end if;
   if p_department is null or not coalesce(p_department = any(string_to_array(b.assignee_department, ',')), false) then raise exception '该部门未分配此报告'; end if;
-  if actor.role <> 'admin' and actor.department <> p_department then raise exception '只能处理自己部门的任务'; end if;
+  if actor.role <> 'admin' and actor.department is distinct from p_department then raise exception '只能处理自己部门的任务'; end if;
   if b.status not in ('open','in_progress','resolved') then raise exception '报告尚未分发'; end if;
+  if actor.role not in ('leader','admin') and coalesce(b.department_progress -> p_department ->> 'assignee_id','') <> actor.id::text then raise exception '仅本部门组长或本部门跟进人可以处理'; end if;
   if p_patch is null or jsonb_typeof(p_patch) <> 'object' or p_patch - array['status','assignee_id','assignee','note']::text[] <> '{}'::jsonb then
     raise exception '处理字段无效';
   end if;
+  if actor.role not in ('leader','admin') and p_patch ? 'assignee_id' then raise exception '仅本部门组长可指定跟进人'; end if;
   entry := b.department_progress -> p_department;
   if p_patch ? 'assignee_id' then
     if actor.role not in ('leader','admin') then raise exception '仅组长或超管可指定跟进人'; end if;
@@ -150,11 +163,37 @@ begin
   if p_patch ? 'status' and coalesce(p_patch ->> 'status','') not in ('open','in_progress','resolved') then raise exception '处理状态无效'; end if;
   if length(coalesce(p_patch ->> 'note','')) > 3000 then raise exception '处理备注最多3000字'; end if;
   entry := coalesce(entry, '{}'::jsonb) || p_patch || jsonb_build_object('updated_at', now());
-  return query update public.bug_reports set department_progress = jsonb_set(department_progress, array[p_department], entry), updated_at = now()
+  return query update public.bug_reports set department_progress = jsonb_set(coalesce(department_progress, '{}'::jsonb), array[p_department], entry), updated_at = now()
     where id = p_bug_id returning *;
 end $$;
 revoke all on function public.update_bug_department_progress(uuid,text,jsonb) from public, anon;
 grant execute on function public.update_bug_department_progress(uuid,text,jsonb) to authenticated;
+
+-- 多选更新处理部门使用行锁；取消勾选的部门保留状态 JSON，未来重新勾选可恢复原状态。
+create or replace function public.update_bug_departments(p_bug_id uuid, p_departments text[], p_note text default '')
+returns setof public.bug_reports language plpgsql security definer set search_path = public
+as $$
+declare b public.bug_reports%rowtype; actor public.profiles%rowtype; dep text; progress jsonb; entry jsonb;
+begin
+  select * into actor from public.profiles where id = auth.uid() and active;
+  if actor.id is null then raise exception '请先登录有效账号'; end if;
+  select * into b from public.bug_reports where id = p_bug_id for update;
+  if not found then raise exception '报告不存在'; end if;
+  if b.status not in ('open','in_progress','resolved') then raise exception '报告尚未分发'; end if;
+  if not (actor.role = 'admin' or (actor.role = 'leader' and actor.department = any(string_to_array(b.assignee_department, ',')))) then raise exception '仅当前处理部门组长或超级管理员可更新处理部门'; end if;
+  if p_departments is null or cardinality(p_departments) = 0 then raise exception '至少保留一个处理部门'; end if;
+  foreach dep in array p_departments loop
+    if dep not in ('技术—前端','技术—后端','设计','产品') then raise exception '处理部门无效：%', dep; end if;
+  end loop;
+  progress := coalesce(b.department_progress, '{}'::jsonb);
+  foreach dep in array p_departments loop
+    entry := progress -> dep;
+    if entry is null then progress := jsonb_set(progress, array[dep], jsonb_build_object('status','open','assignee_id',null,'assignee','','note',''), true); end if;
+  end loop;
+  return query update public.bug_reports set assignee_department = array_to_string(p_departments, ','), department_progress = progress, transfer_note = coalesce(p_note,''), updated_at = now() where id = p_bug_id returning *;
+end $$;
+revoke all on function public.update_bug_departments(uuid,text[],text) from public, anon;
+grant execute on function public.update_bug_departments(uuid,text[],text) to authenticated;
 
 notify pgrst, 'reload schema';
 commit;

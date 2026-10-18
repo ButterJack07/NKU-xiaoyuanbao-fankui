@@ -355,7 +355,7 @@
     var query = (document.getElementById('departmentCaseSearch').value || '').trim().toLowerCase();
     var status = document.getElementById('departmentCaseStatus').value;
     var importance = document.getElementById('departmentCaseImportance').value;
-    var filtered = bugs.filter(function (bug) { return bugDepartments(bug).indexOf(departmentFromUrl) !== -1 && isDistributed(bug.status) && (status === 'all' || bug.status === status) && (importance === 'all' || bug.importance === importance) && (!query || String(bug.title || '').toLowerCase().includes(query)); });
+    var filtered = bugs.map(function (bug) { return window.PatchworkAPI.departmentView(bug, departmentFromUrl); }).filter(function (bug) { return bugDepartments(bug).indexOf(departmentFromUrl) !== -1 && isDistributed(bug.status) && (status === 'all' || bug.status === status) && (importance === 'all' || bug.importance === importance) && (!query || String(bug.title || '').toLowerCase().includes(query)); });
     list.innerHTML = filtered.map(function (bug) {
       var mine = currentProfile && bug.assignee_id === currentProfile.id;
       var statusLabel = { open: '待处理', in_progress: '处理中', resolved: '已解决' }[bug.status] || bug.status || '—';
@@ -414,7 +414,7 @@
     var query = (document.getElementById('departmentSearch').value || '').trim().toLowerCase();
     var status = document.getElementById('departmentStatusFilter').value;
     var importance = document.getElementById('departmentImportanceFilter').value;
-    var rows = bugs.filter(function (bug) {
+    var rows = bugs.map(function (bug) { return window.PatchworkAPI.departmentView(bug, departmentFromUrl); }).filter(function (bug) {
       return bugDepartments(bug).indexOf(departmentFromUrl) !== -1 &&
         isDistributed(bug.status) &&
         (status === 'all' || bug.status === status) &&

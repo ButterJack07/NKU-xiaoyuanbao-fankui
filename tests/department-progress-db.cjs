@@ -34,10 +34,23 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   assert.equal(row.department_progress['技术—前端'].status, 'resolved');
   assert.equal(row.department_progress['设计'].status, 'open');
   assert.equal(row.status, 'in_progress');
-  await assert.rejects(db.exec(`update bug_reports set department_progress=jsonb_set(department_progress,'{技术—前端,status}','"open"')`), /只能修改自己部门/);
+  await db.exec(`set request.uid = '00000000-0000-0000-0000-000000000001'`);
+  await assert.rejects(db.query(`select * from update_bug_department_progress($1,$2,$3)`, ['00000000-0000-0000-0000-000000000010','技术—前端',{assignee_id:'00000000-0000-0000-0000-000000000002'}]), /跟进人必须是当前部门成员/);
+  await db.exec(`set request.uid = '00000000-0000-0000-0000-000000000002'`);
   await db.exec(`update bug_reports set assignee_department='技术—前端,技术—后端'`);
   assert.equal((await db.query('select status from bug_reports')).rows[0].status, 'resolved');
   await assert.rejects(db.exec(`update bug_reports set status='open'`), /不能直接更改报告/);
+
+  // Legacy group leader must retain other departments and preserve a newly removed department's progress.
+  await db.exec(`insert into auth.users(id) values ('00000000-0000-0000-0000-000000000003'); insert into public.profiles(id,role,department) values ('00000000-0000-0000-0000-000000000003','leader','技术—前端') on conflict (id) do update set role='leader',department='技术—前端';`);
+  await db.exec(`set request.uid = '00000000-0000-0000-0000-000000000003'`);
+  await db.query(`select * from update_bug_departments($1,$2,$3)`, ['00000000-0000-0000-0000-000000000010',['技术—前端','设计'],'保留其他组']);
+  row = (await db.query('select * from bug_reports')).rows[0];
+  assert.equal(row.assignee_department, '技术—前端,设计');
+  assert.equal(row.department_progress['技术—前端'].status, 'resolved');
+  assert.equal(row.department_progress['设计'].status, 'open');
+  assert.equal(row.status, 'in_progress');
+  assert.equal((await db.query('select count(*)::int as n from bug_department_changes')).rows[0].n, 3);
   await db.close();
   console.log('PASS: SQL migration rerun, independent state, aggregation, department changes and cross-department permissions');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -127,6 +127,10 @@
     });
   }
 
+  async function listDepartmentChanges(bugId) {
+    return request('/rest/v1/bug_department_changes?select=*&bug_id=eq.' + encodeURIComponent(bugId) + '&order=created_at.desc', { method: 'GET', headers: headers() });
+  }
+
   async function deleteBug(id) {
     return request('/rest/v1/' + config.tableName + '?id=eq.' + encodeURIComponent(id), {
       method: 'DELETE',
@@ -265,6 +269,7 @@
     departmentState: departmentState,
     departmentView: departmentView,
     updateDepartmentProgress: updateDepartmentProgress,
+    listDepartmentChanges: listDepartmentChanges,
     deleteBug: deleteBug,
     listReviewEvents: listReviewEvents,
     createReviewEvent: createReviewEvent,
