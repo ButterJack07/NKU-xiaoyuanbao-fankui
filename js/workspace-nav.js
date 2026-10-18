@@ -17,7 +17,7 @@
       '<a data-department="产品" href="department-bugs.html?department=产品">产品</a>' +
       '<a data-review-only class="review-nav-link hidden" href="review-bugs.html">待审核</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
-      '</div><a class="nav-notice" href="announcements.html">公告信息</a><a class="nav-data-board" href="data-dashboard.html">数据看板</a></nav>' +
+      '</div><a class="nav-notice" href="announcements.html">公告信息</a><a class="nav-data-board" href="data-dashboard.html">数据看板</a><section class="nav-daily-quote" aria-label="每日短句"><blockquote id="dailyQuoteText">愿每一份努力，都能汇成前进的力量。</blockquote><cite id="dailyQuoteAuthor">— 校缘宝</cite></section></nav>' +
       '<button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>';
 
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
@@ -35,6 +35,38 @@
     if (noticeLink) noticeLink.classList.toggle('active', page === 'announcements.html' || page === 'announcement-detail.html');
     topbar.querySelector('.nav-data-board').classList.toggle('active', page === 'data-dashboard.html');
     document.getElementById('topUserCard').addEventListener('click', openProfileModal);
+    loadDailyQuote();
+  }
+
+  async function loadDailyQuote() {
+    var quotes = [
+      '愿每一份努力，都能汇成前进的力量。',
+      '今天的进步，无论多小，都值得肯定。',
+      '把复杂的事情做好，就是不平凡。',
+      '持续前进的人，终会抵达想去的地方。',
+      '认真做好眼前的事，时间会给出答案。',
+      '每一次解决问题，都是团队向前的一步。',
+      '开始行动，就是改变的开始。'
+    ];
+    var key = new Date().toISOString().slice(0, 10);
+    var fallback = quotes[Math.floor(new Date(key).getTime() / 86400000) % quotes.length];
+    var text = document.getElementById('dailyQuoteText');
+    var author = document.getElementById('dailyQuoteAuthor');
+    if (!text || !author) return;
+    try {
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function () { controller.abort(); }, 3500);
+      var response = await fetch('https://v1.hitokoto.cn/?c=k', { signal: controller.signal, cache: 'no-store' });
+      window.clearTimeout(timeout);
+      if (!response.ok) throw new Error('quote API unavailable');
+      var result = await response.json();
+      if (!result || !result.hitokoto) throw new Error('invalid quote response');
+      text.textContent = result.hitokoto;
+      author.textContent = result.from_who || result.from ? '— ' + (result.from_who || result.from) : '';
+    } catch (error) {
+      text.textContent = fallback;
+      author.textContent = '';
+    }
   }
 
   function openProfileModal() {
