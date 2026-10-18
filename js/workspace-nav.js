@@ -90,14 +90,15 @@
       });
       var currentPage = window.location.pathname.split('/').pop() || 'index.html';
       var isProductUploadPage = currentPage === 'submit-bug.html' && new URLSearchParams(window.location.search).get('source') === 'product' && profile.department === '产品';
+      var isReviewerEditPage = currentPage === 'submit-bug.html' && Boolean(new URLSearchParams(window.location.search).get('bug')) && Number(profile.review_stage) > 0;
       var isReviewDetail = currentPage === 'bug-detail.html' && Number(profile.review_stage) > 0;
-      var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage;
+      var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage || isReviewerEditPage;
       var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html'].includes(currentPage);
       if (isPublicWorkspacePage || isReviewDetail) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');
-      } else if (profile.department !== '测试' && !isProductUploadPage && (!isDepartmentPage || currentDepartment !== profile.department)) {
+      } else if (profile.department !== '测试' && !isProductUploadPage && !isReviewerEditPage && (!isDepartmentPage || currentDepartment !== profile.department)) {
         window.location.replace('department-bugs.html?department=' + encodeURIComponent(profile.department));
       }
     }

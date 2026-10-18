@@ -1170,3 +1170,9 @@ body:not(.login-page) .top-user-avatar { background: linear-gradient(145deg, var
 .review-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .existing-attachments-title { margin: 0 0 8px; color: #6b6257; font-size: 13px; font-weight: 600; }
 #existingAttachments { margin-bottom: 12px; }
+.department-check-field { min-width: 0; margin: 0; padding: 12px 14px; border: 1px solid #e8dfd1; border-radius: 12px; }
+.department-check-field legend { padding: 0 5px; color: #423b34; font-size: 13px; font-weight: 600; }
+.department-checkbox-group { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+.department-checkbox-group label { display: inline-flex; align-items: center; gap: 7px; color: #51483f; font-size: 13px; cursor: pointer; }
+.department-checkbox-group input { accent-color: #ef8d48; }
+.reviewEditModal .field textarea { resize: vertical; }

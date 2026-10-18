@@ -9,6 +9,7 @@
   var successModal = document.getElementById('successModal');
   var selectedFiles = [];
   var editingBug = null;
+  var editingAsReviewer = false;
   var existingAttachments = [];
   var editBugId = new URLSearchParams(window.location.search).get('bug');
   var productUploadMode = new URLSearchParams(window.location.search).get('source') === 'product' && !editBugId;
@@ -50,8 +51,6 @@
       document.querySelector('.bug-submit-note').textContent = '产品端上传后直接分发至所选部门，默认完成第一审核和第二审核。';
       var breadcrumb = document.querySelector('.workspace-breadcrumb');
       if (breadcrumb) breadcrumb.innerHTML = '<a href="department-bugs.html?department=%E4%BA%A7%E5%93%81">产品</a><b>/</b><strong>上传缺陷报告</strong>';
-      var listLink = document.querySelector('#successModal a[href="bug-reports.html"]');
-      if (listLink) { listLink.href = 'department-bugs.html?department=' + encodeURIComponent('产品'); listLink.textContent = '查看产品缺陷列表'; }
       document.getElementById('submitButton').querySelector('span').textContent = '提交并直接分发';
       document.title = '校缘宝内测管理网站 · 产品端上传缺陷报告';
     } catch (error) {
@@ -154,22 +153,27 @@
       var bugs = await window.PatchworkAPI.listBugs();
       var bug = bugs.find(function (item) { return item.id === editBugId; });
       if (!bug) throw new Error('找不到该缺陷报告。');
-      if (profile && bug.submitter_id && bug.submitter_id !== profile.id && profile.role !== 'admin') throw new Error('只能修改自己提交的缺陷报告。');
-      if (profile && profile.role !== 'admin' && ['open', 'in_progress', 'resolved', 'pending_review_2'].includes(bug.status)) throw new Error('该报告当前状态不可修改。');
+      var isAssignedReviewer = profile && ((bug.status === 'pending_review_1' && Number(profile.review_stage) === 1) || (bug.status === 'pending_review_2' && Number(profile.review_stage) === 2));
+      var mayEdit = profile && ((bug.submitter_id === profile.id && ['rejected', 'postponed'].includes(bug.status)) || isAssignedReviewer);
+      if (!mayEdit) throw new Error('当前账号无权修改这份报告。');
       editingBug = bug;
+      editingAsReviewer = Boolean(isAssignedReviewer);
       existingAttachments = (bug.attachment_urls || []).slice();
-      form.title.value = bug.title || '';
-      form.module.value = bug.module || '';
-      form.description.value = bug.description || '';
-      form.repro_steps.value = bug.repro_steps || '';
-      form.expected_result.value = bug.expected_result || '';
-      form.actual_result.value = bug.actual_result || '';
-      form.importance.value = bug.importance || '';
-      form.assignee_department.value = bug.assignee_department || '';
+      var fields = ['title', 'module', 'description', 'repro_steps', 'expected_result', 'actual_result', 'importance'];
+      fields.forEach(function (name) { if (form.elements[name]) form.elements[name].value = bug[name] || ''; });
+      var savedDepartments = String(bug.assignee_department || '').split(',').map(function (item) { return item.trim(); });
+      form.querySelectorAll('input[name="assignee_departments"]').forEach(function (input) { input.checked = savedDepartments.indexOf(input.value) !== -1; });
       if (reporterField) reporterField.value = bug.reporter || reporterField.value;
-      document.getElementById('bugSubmitTitle').textContent = '修改软件缺陷报告';
-      document.getElementById('bugSubmitDescription').textContent = '修改后点击“重新提交”，报告将重新进入审核流程。';
-      submitButton.querySelector('span').textContent = '重新提交缺陷报告';
+      if (isAssignedReviewer) {
+        form.querySelectorAll('input, textarea, select').forEach(function (field) {
+          if (field.name !== 'attachments' && field.name !== 'reporter') field.required = false;
+        });
+        var attachmentLabel = document.querySelector('#bugForm .field-full:has(#dropzone) > span');
+        if (attachmentLabel) attachmentLabel.innerHTML = '附件';
+      }
+      document.getElementById('bugSubmitTitle').textContent = isAssignedReviewer ? '审核时修改报告' : '修改软件缺陷报告';
+      document.getElementById('bugSubmitDescription').textContent = isAssignedReviewer ? '修改后保存会立即更新报告，审核仍停留在当前环节。' : '修改后点击“重新提交”，报告将重新进入审核流程。';
+      submitButton.querySelector('span').textContent = isAssignedReviewer ? '保存审核修改' : '重新提交缺陷报告';
       document.title = '校缘宝内测管理网站 · 修改软件缺陷报告';
       var zone = document.getElementById('dropzone');
       var container = document.createElement('div');
@@ -202,7 +206,11 @@
 
       submitButton.querySelector('span').textContent = '正在写入数据库…';
       var data = Object.fromEntries(new FormData(form).entries());
+      var departments = Array.from(form.querySelectorAll('input[name="assignee_departments"]:checked')).map(function (input) { return input.value; });
       delete data.attachments;
+      delete data.assignee_departments;
+      if (!departments.length) throw new Error('请至少选择一个归属部门。');
+      data.assignee_department = departments.join(',');
       data.attachment_urls = attachmentUrls;
       data.status = productUploadMode ? 'open' : 'pending_review_1';
       data.submission_source = productUploadMode ? 'product' : 'test';
@@ -221,21 +229,24 @@
           importance: data.importance,
           assignee_department: data.assignee_department,
           attachment_urls: data.attachment_urls,
-          status: 'pending_review_1',
-          review_note: '',
+          status: editingAsReviewer ? editingBug.status : 'pending_review_1',
+          review_note: editingAsReviewer ? editingBug.review_note : '',
           updated_at: new Date().toISOString()
         });
         bug = rows && rows[0];
-        document.getElementById('successTitle').textContent = '缺陷报告已重新提交';
-        document.getElementById('successMessage').innerHTML = '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已重新进入审核流程。';
+        document.getElementById('successTitle').textContent = editingAsReviewer ? '审核修改已保存' : '缺陷报告已重新提交';
+        document.getElementById('successMessage').innerHTML = editingAsReviewer
+          ? '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，报告内容已保存，审核仍在当前环节。'
+          : '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已重新进入审核流程。';
       } else {
         data.assignee = '';
         var created = await window.PatchworkAPI.createBug(data);
         bug = created && created[0];
         document.getElementById('successTitle').textContent = '缺陷报告已提交';
         if (productUploadMode) {
-          var productListLink = document.querySelector('#successModal a[href*="department-bugs.html"]');
-          if (productListLink) productListLink.href = 'department-bugs.html?department=' + encodeURIComponent(data.assignee_department);
+          var productListLink = document.querySelector('#successModal a[href="bug-reports.html"]');
+          if (productListLink) productListLink.href = 'department-bugs.html?department=' + encodeURIComponent(departments[0]);
+          if (productListLink) productListLink.textContent = '查看所选部门缺陷列表';
         }
         document.getElementById('successMessage').innerHTML = productUploadMode
           ? '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已直接分发至所选部门，默认完成第一审核和第二审核。'
@@ -246,13 +257,13 @@
       showToast(error.message || '提交失败，请稍后重试。', 'error');
     } finally {
       submitButton.disabled = false;
-      submitButton.querySelector('span').textContent = editingBug ? '重新提交缺陷报告' : productUploadMode ? '提交并直接分发' : '提交缺陷报告';
+      submitButton.querySelector('span').textContent = editingBug ? (editingAsReviewer ? '保存审核修改' : '重新提交缺陷报告') : productUploadMode ? '提交并直接分发' : '提交缺陷报告';
     }
   });
 
   document.getElementById('submitAnother').addEventListener('click', function () {
     successModal.classList.add('hidden');
-    if (editingBug) { window.location.href = 'bug-reports.html'; return; }
+    if (editingBug) { window.location.href = editingAsReviewer ? 'review-bugs.html' : 'bug-reports.html'; return; }
     form.reset();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
