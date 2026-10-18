@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>校缘宝 · 数据看板</title><link rel="stylesheet" href="css/styles.css"></head>
+<body class="bug-reports-page"><header class="topbar"></header>
+<main class="dashboard-shell cases-page-shell">
+  <section class="cases-title"><p class="eyebrow">BUG REPORTS / OVERVIEW</p><h1>数据看板</h1><p>全员可查看。所有处理部门完成才算已完成；部分完成或有部门处理中则算处理中。未分发报告单独标注。</p></section>
+  <section class="overview-card"><div id="progressRing" class="progress-ring" role="img" aria-label="正在加载统计"><div><strong id="overviewTotal">0</strong><span>份缺陷报告</span></div></div><div id="overviewLegend" class="overview-legend"></div></section>
+  <div class="cases-actions"><label class="cases-search"><span>⌕</span><input id="overviewSearch" type="search" placeholder="搜索编号 / 问题标题"></label><select id="overviewStatus" class="department-select"><option value="all">全部状态</option><option value="open">未处理</option><option value="in_progress">处理中</option><option value="resolved">已完成</option><option value="undistributed">未分发</option></select><button id="refreshOverview" class="case-action-button" type="button">刷新数据</button></div>
+  <section class="cases-table-card overview-table-wrap"><table class="cases-table overview-table"><thead><tr><th>缺陷编号</th><th>问题标题</th><th>总体状态</th><th>技术—前端</th><th>技术—后端</th><th>设计</th><th>产品</th></tr></thead><tbody id="overviewRows"></tbody></table><div id="overviewEmpty" class="cases-empty hidden">暂无符合条件的报告</div></section>
+  <p id="overviewError" class="login-error hidden" role="alert"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/workspace-nav.js"></script><script src="js/api.js"></script><script src="js/data-dashboard.js"></script>
+</body></html>

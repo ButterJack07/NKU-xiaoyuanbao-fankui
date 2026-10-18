@@ -1176,3 +1176,25 @@ body:not(.login-page) .top-user-avatar { background: linear-gradient(145deg, var
 .department-checkbox-group label { display: inline-flex; align-items: center; gap: 7px; color: #51483f; font-size: 13px; cursor: pointer; }
 .department-checkbox-group input { accent-color: #ef8d48; }
 .reviewEditModal .field textarea { resize: vertical; }
+
+.nav-data-board { display: flex; justify-content: center; align-items: center; min-height: 46px; margin: 12px auto 0; width: calc(100% - 48px); border: 1px solid #171717; border-radius: 999px; background: #fff; color: #171717; font-size: 14px; }
+.nav-data-board:hover, .nav-data-board.active { background: #fff1d0; }
+.overview-card { display: flex; align-items: center; justify-content: center; gap: 64px; margin: 24px 0; padding: 32px; background: #fff; border: 1px solid #e5ddd1; border-radius: 18px; }
+.progress-ring { flex-shrink: 0; width: 240px; height: 240px; border-radius: 50%; display: grid; place-items: center; background: #e7e7e7; }
+.progress-ring > div { width: 168px; height: 168px; border-radius: 50%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.progress-ring strong { font-size: 42px; line-height: 1.3; color: #302c27; }
+.progress-ring span { color: #777; font-size: 13px; }
+.overview-legend { min-width: 200px; display: grid; gap: 18px; }
+.overview-legend > div { display: flex; gap: 12px; align-items: center; }
+.overview-legend i { width: 12px; height: 12px; border-radius: 50%; }
+.overview-legend strong { margin-left: auto; }
+.overview-status { display: inline-block; white-space: nowrap; padding: 5px 8px; border-radius: 7px; font-size: 12px; }
+.overview-resolved { color: #267752; background: #e5f4eb; }
+.overview-in_progress { color: #946018; background: #fff0d9; }
+.overview-open { color: #a04436; background: #fdece6; }
+.overview-undistributed { color: #686b74; background: #eceef1; }
+.overview-unassigned { color: #999; }
+.overview-table-wrap { overflow-x: auto; }
+.overview-table { min-width: 800px; }
+.overview-table th:nth-child(2) { width: 24%; }
+@media (max-width: 650px) { .overview-card { flex-direction: column; gap: 28px; } .overview-legend { width: 100%; } .nav-data-board { width: auto; margin: 0 8px; padding: 0 12px; } }

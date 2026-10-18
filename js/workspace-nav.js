@@ -17,11 +17,11 @@
       '<a data-department="产品" href="department-bugs.html?department=产品">产品</a>' +
       '<a data-review-only class="review-nav-link hidden" href="review-bugs.html">待审核</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
-      '</div><a class="nav-notice" href="announcements.html">公告信息</a></nav>' +
+      '</div><a class="nav-notice" href="announcements.html">公告信息</a><a class="nav-data-board" href="data-dashboard.html">数据看板</a></nav>' +
       '<button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>';
 
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
-      var publicPage = page === 'announcements.html' || page === 'announcement-detail.html';
+      var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
       link.classList.toggle('active', !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home');
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
@@ -33,6 +33,7 @@
     });
     var noticeLink = topbar.querySelector('.nav-notice');
     if (noticeLink) noticeLink.classList.toggle('active', page === 'announcements.html' || page === 'announcement-detail.html');
+    topbar.querySelector('.nav-data-board').classList.toggle('active', page === 'data-dashboard.html');
     document.getElementById('topUserCard').addEventListener('click', openProfileModal);
   }
 
@@ -93,7 +94,7 @@
       var isReviewerEditPage = currentPage === 'submit-bug.html' && Boolean(new URLSearchParams(window.location.search).get('bug')) && Number(profile.review_stage) > 0;
       var isReviewDetail = currentPage === 'bug-detail.html' && Number(profile.review_stage) > 0;
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage || isReviewerEditPage;
-      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html'].includes(currentPage);
+      var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html', 'data-dashboard.html'].includes(currentPage);
       if (isPublicWorkspacePage || isReviewDetail) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {

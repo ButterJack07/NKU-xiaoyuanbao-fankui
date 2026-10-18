@@ -94,8 +94,9 @@
       });
     };
     try {
-      return await extend(baseFields + ',review_note,reviewer_id,submission_source');
+      return await extend(baseFields + ',review_note,reviewer_id,submission_source,department_progress');
     } catch (error) {
+      if (/department_progress/i.test(error.message || '')) throw new Error('请先执行 supabase-department-progress.sql，启用部门独立处理状态。');
       if (/review_note|reviewer_id|submission_source/i.test(error.message || '')) return extend(baseFields);
       throw error;
     }
@@ -106,6 +107,23 @@
       method: 'PATCH',
       headers: headers({ Prefer: 'return=representation' }),
       body: JSON.stringify(patch)
+    });
+  }
+
+  function departmentState(bug, department) {
+    return (bug.department_progress || {})[department] || { status: bug.status, assignee: bug.assignee || '', assignee_id: bug.assignee_id, note: bug.transfer_note || '' };
+  }
+
+  function departmentView(bug, department) {
+    if (!department || !['open', 'in_progress', 'resolved'].includes(bug.status)) return bug;
+    var state = departmentState(bug, department);
+    return Object.assign({}, bug, { status: state.status, assignee: state.assignee || '', assignee_id: state.assignee_id || null, follow_up_id: state.assignee_id || null });
+  }
+
+  async function updateDepartmentProgress(id, department, patch) {
+    return request('/rest/v1/rpc/update_bug_department_progress', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ p_bug_id: id, p_department: department, p_patch: patch })
     });
   }
 
@@ -244,6 +262,9 @@
     createBug: createBug,
     listBugs: listBugs,
     updateBug: updateBug,
+    departmentState: departmentState,
+    departmentView: departmentView,
+    updateDepartmentProgress: updateDepartmentProgress,
     deleteBug: deleteBug,
     listReviewEvents: listReviewEvents,
     createReviewEvent: createReviewEvent,

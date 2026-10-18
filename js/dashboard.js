@@ -616,14 +616,7 @@
   }
 
   function openDrawer(id) {
-    var bug = bugs.find(function (item) { return item.id === id; });
-    if (!bug) return;
-    currentBugId = id;
-    renderDrawer(bug);
-    drawer.classList.add('open');
-    drawer.setAttribute('aria-hidden', 'false');
-    backdrop.classList.remove('hidden');
-    document.body.classList.add('drawer-open');
+    window.location.href = 'bug-detail.html?bug=' + encodeURIComponent(id) + (departmentFromUrl ? '&department=' + encodeURIComponent(departmentFromUrl) : '');
   }
 
   function closeDrawer() {
@@ -686,7 +679,7 @@
     bugList.classList.add('hidden');
     emptyState.classList.add('hidden');
     try {
-      bugs = await window.PatchworkAPI.listBugs();
+      bugs = (await window.PatchworkAPI.listBugs()).map(function (bug) { return window.PatchworkAPI.departmentView(bug, departmentFromUrl); });
       renderDepartmentTable();
       updateStats();
       renderList();
