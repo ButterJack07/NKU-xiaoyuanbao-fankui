@@ -1218,6 +1218,6 @@ body:not(.login-page) .top-user-avatar { background: linear-gradient(145deg, var
 .overview-table { min-width: 800px; }
 .overview-table th:nth-child(2) { width: 24%; }
 .nav-daily-quote { width: calc(100% - 40px); max-width: 190px; margin: 18px auto 0; padding: 0; border: 0; background: transparent; color: #fff; text-align: center; }
-.nav-daily-quote blockquote { margin: 0; color: #fff; font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 14px; font-style: italic; font-weight: 500; line-height: 1.9; overflow-wrap: anywhere; }
-.nav-daily-quote cite { display: block; min-height: 1em; margin-top: 7px; color: rgba(255,255,255,.78); font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 11px; font-style: italic; line-height: 1.5; }
+.nav-daily-quote blockquote { margin: 0; color: #fff; font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 13.3px; font-style: italic; font-weight: 500; line-height: 1.9; overflow-wrap: anywhere; text-shadow: 0 1px 4px rgba(77, 39, 20, .5); }
+.nav-daily-quote cite { display: block; min-height: 1em; margin-top: 7px; color: rgba(255,255,255,.85); font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 10.45px; font-style: italic; line-height: 1.5; text-shadow: 0 1px 3px rgba(77, 39, 20, .45); }
 @media (max-width: 650px) { .overview-card { flex-direction: column; gap: 28px; } .overview-legend { width: 100%; } .nav-data-board { width: auto; margin: 0 8px; padding: 0 12px; } }
