@@ -69,7 +69,8 @@
   var productUploadBug = document.getElementById('productUploadBug');
   if (productUploadBug && departmentFromUrl === '产品') {
     window.PATCHWORK_READY.then(function () {
-      if (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.department !== '产品') return;
+      var profile = window.PATCHWORK_PROFILE;
+      if (!profile || (profile.department !== '产品' && profile.role !== 'admin')) return;
       productUploadBug.classList.remove('hidden');
       productUploadBug.addEventListener('click', function () { window.location.href = 'submit-bug.html?source=product'; });
     });

@@ -45,7 +45,7 @@
     try {
       await window.PATCHWORK_READY;
       var profile = window.PATCHWORK_PROFILE;
-      if (!profile || profile.department !== '产品') throw new Error('仅产品部门成员可以从产品端直接上传缺陷报告。');
+      if (!profile || (profile.department !== '产品' && profile.role !== 'admin')) throw new Error('仅可访问产品端主页的账号能够直接上传报告。');
       document.getElementById('bugSubmitTitle').textContent = '产品端上传缺陷报告';
       document.getElementById('bugSubmitDescription').textContent = '选择归属部门后直接分发至对应部门，默认完成第一审核和第二审核。';
       document.querySelector('.bug-submit-note').textContent = '产品端上传后直接分发至所选部门，默认完成第一审核和第二审核。';
@@ -189,7 +189,7 @@
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
     await productUploadReady;
-    if (productUploadMode && (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.department !== '产品')) return;
+    if (productUploadMode && (!window.PATCHWORK_PROFILE || (window.PATCHWORK_PROFILE.department !== '产品' && window.PATCHWORK_PROFILE.role !== 'admin'))) return;
     if (!window.PatchworkAPI.isConfigured()) {
       showToast('请先配置 Supabase 数据库连接。', 'error');
       return;

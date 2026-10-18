@@ -70,6 +70,7 @@ alter table public.bug_reports add column if not exists reviewer_id uuid referen
 alter table public.bug_reports add column if not exists submission_source text not null default 'test';
 alter table public.bug_reports alter column assignee_department drop not null;
 -- 替换旧的单部门校验，允许逗号分隔的多个归属部门。
+alter table public.bug_reports drop constraint if exists bug_reports_assignee_department_check;
 alter table public.bug_reports drop constraint if exists bug_reports_assignment_check;
 alter table public.bug_reports add constraint bug_reports_assignment_check check (
   assignee_department is null
@@ -141,7 +142,7 @@ returns trigger language plpgsql security definer set search_path = public
 as $$
 begin
   if new.submission_source = 'product' then
-    if public.current_department() is distinct from '产品'
+    if (public.current_department() is distinct from '产品' and not public.is_admin())
       or new.assignee_department is null
       or new.assignee_department = ''
       or not string_to_array(new.assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[]
@@ -236,7 +237,7 @@ with check (
   (submitter_id = auth.uid() or submitter_id is null)
   and (
     (status = 'pending_review_1' and submission_source = 'test')
-    or (status = 'open' and submission_source = 'product' and public.current_department() = '产品' and assignee_department <> '' and string_to_array(assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[])
+    or (status = 'open' and submission_source = 'product' and (public.current_department() = '产品' or public.is_admin()) and assignee_department <> '' and string_to_array(assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[])
   )
   and fix_plan = ''
   and assignee = ''
