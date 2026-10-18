@@ -69,7 +69,13 @@ alter table public.bug_reports add column if not exists review_note text not nul
 alter table public.bug_reports add column if not exists reviewer_id uuid references auth.users(id);
 alter table public.bug_reports add column if not exists submission_source text not null default 'test';
 alter table public.bug_reports alter column assignee_department drop not null;
-alter table public.bug_reports alter column assignee_department drop not null;
+-- 替换旧的单部门校验，允许逗号分隔的多个归属部门。
+alter table public.bug_reports drop constraint if exists bug_reports_assignment_check;
+alter table public.bug_reports add constraint bug_reports_assignment_check check (
+  assignee_department is null
+  or assignee_department = ''
+  or string_to_array(assignee_department, ',') <@ array['技术—前端', '技术—后端', '设计', '产品']::text[]
+);
 do $$
 begin
   if not exists (select 1 from pg_constraint where conrelid = 'public.bug_reports'::regclass and conname = 'bug_reports_submission_source_check') then
