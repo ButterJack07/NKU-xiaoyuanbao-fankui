@@ -27,7 +27,7 @@
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
       var profile = window.PATCHWORK_PROFILE;
-      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && profile && profile.department === '产品' && Boolean(profile.is_product_lead);
+      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && profile && Boolean(profile.is_product_lead) && (profile.department === '产品' || profile.role === 'admin');
       link.classList.toggle('active', link.dataset.department === department || productLeadHome);
     });
     topbar.querySelectorAll('[data-admin-only]').forEach(function (link) {
@@ -114,7 +114,7 @@
       link.classList.toggle('hidden', !profile || !(Number(profile.review_stage) > 0));
     });
     var productDepartmentLink = topbar.querySelector('[data-department="产品"]');
-    var isProductLead = Boolean(profile && profile.department === '产品' && profile.is_product_lead);
+    var isProductLead = Boolean(profile && profile.is_product_lead && (profile.department === '产品' || profile.role === 'admin'));
     if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html' : 'department-bugs.html?department=产品';
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
