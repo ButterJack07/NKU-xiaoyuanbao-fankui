@@ -17,6 +17,197 @@
     return profile.department === target;
   }
 
+  var INBOX_STORAGE_PREFIX = 'xiaoyuanbao-inbox-read:';
+  var inboxItems = [];
+  var inboxProfileId = '';
+  var inboxReadMap = {};
+  var inboxLoading = false;
+
+  function inboxEscape(value) {
+    return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function inboxDate(value) {
+    var date = value ? new Date(value) : null;
+    return date && !isNaN(date.getTime()) ? date.toLocaleString('zh-CN', { hour12: false }) : '—';
+  }
+
+  function inboxTruncate(value, max) {
+    var text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? text.slice(0, max) + '…' : text;
+  }
+
+  function loadInboxReadState(profileId) {
+    inboxReadMap = {};
+    try {
+      var stored = JSON.parse(localStorage.getItem(INBOX_STORAGE_PREFIX + profileId) || '[]');
+      if (Array.isArray(stored)) stored.forEach(function (id) { inboxReadMap[id] = true; });
+    } catch (error) {
+      inboxReadMap = {};
+    }
+  }
+
+  function saveInboxReadState() {
+    if (!inboxProfileId) return;
+    try {
+      localStorage.setItem(INBOX_STORAGE_PREFIX + inboxProfileId, JSON.stringify(Object.keys(inboxReadMap)));
+    } catch (error) {
+      return;
+    }
+  }
+
+  function updateInboxBadge() {
+    var badge = document.getElementById('inboxBadge');
+    if (!badge) return;
+    var count = inboxItems.filter(function (item) { return !inboxReadMap[item.id]; }).length;
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.classList.toggle('hidden', count === 0);
+  }
+
+  function renderInboxList(loading) {
+    var list = document.getElementById('inboxList');
+    if (!list) return;
+    if (loading) {
+      list.innerHTML = '<div class="inbox-empty">正在加载消息…</div>';
+      return;
+    }
+    if (!inboxItems.length) {
+      list.innerHTML = '<div class="inbox-empty">暂无消息</div>';
+      return;
+    }
+    list.innerHTML = inboxItems.map(function (item) {
+      var unread = !inboxReadMap[item.id];
+      var meta = item.type === 'reject'
+        ? '驳回时间：' + inboxDate(item.time) + ' · 处理人：' + inboxEscape(item.person || '—')
+        : '提交人：' + inboxEscape(item.person || '—') + ' · 提交时间：' + inboxDate(item.time);
+      var note = item.type === 'reject' && item.note ? '<p class="inbox-item-note">' + inboxEscape(inboxTruncate(item.note, 60)) + '</p>' : '';
+      return '<article class="inbox-item' + (unread ? ' unread' : '') + '"><a class="inbox-item-main" href="' + inboxEscape(item.href) + '"><div class="inbox-item-head"><span class="inbox-type inbox-type-' + item.type + '">' + (item.type === 'reject' ? '被驳回' : '待审核') + '</span><strong>' + inboxEscape(item.code) + '</strong></div><h3>' + inboxEscape(item.title) + '</h3><p class="inbox-item-meta">' + meta + '</p>' + note + '</a><button class="inbox-read-toggle' + (unread ? '' : ' read') + '" type="button" data-inbox-read="' + inboxEscape(item.id) + '" aria-pressed="' + String(unread) + '" title="' + (unread ? '当前未读，点击标为已读' : '当前已读，点击标为未读') + '"><span class="inbox-read-track"><i></i></span><span class="inbox-read-text">' + (unread ? '未读' : '已读') + '</span></button></article>';
+    }).join('');
+    list.querySelectorAll('[data-inbox-read]').forEach(function (button) {
+      button.onclick = function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var id = button.getAttribute('data-inbox-read');
+        if (inboxReadMap[id]) delete inboxReadMap[id]; else inboxReadMap[id] = true;
+        saveInboxReadState();
+        var unread = !inboxReadMap[id];
+        button.classList.toggle('read', !unread);
+        button.setAttribute('aria-pressed', String(unread));
+        button.title = unread ? '当前未读，点击标为已读' : '当前已读，点击标为未读';
+        var label = button.querySelector('.inbox-read-text');
+        if (label) label.textContent = unread ? '未读' : '已读';
+        var article = button.closest('.inbox-item');
+        if (article) article.classList.toggle('unread', unread);
+        updateInboxBadge();
+      };
+    });
+  }
+
+  function ensureInboxModal() {
+    if (document.getElementById('inboxModal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'inboxModal';
+    modal.className = 'modal-backdrop hidden';
+    modal.innerHTML = '<section class="user-modal inbox-modal" role="dialog" aria-modal="true" aria-labelledby="inboxTitle"><div class="developer-modal-header"><div><h2 id="inboxTitle">收件箱</h2><p class="user-modal-identity">被驳回的报告与待审核内容</p><p class="user-modal-help">最新消息排在最上方；可在右侧切换已读或未读。</p></div><button id="closeInbox" class="icon-button" type="button" aria-label="关闭收件箱">×</button></div><div id="inboxList" class="inbox-list"></div></section>';
+    document.body.appendChild(modal);
+    document.getElementById('closeInbox').onclick = closeInbox;
+    modal.addEventListener('click', function (event) { if (event.target === modal) closeInbox(); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeInbox(); });
+  }
+
+  function closeInbox() {
+    var modal = document.getElementById('inboxModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('drawer-open');
+  }
+
+  async function openInbox() {
+    ensureInboxModal();
+    var modal = document.getElementById('inboxModal');
+    modal.classList.remove('hidden');
+    document.body.classList.add('drawer-open');
+    renderInboxList(true);
+    if (window.PATCHWORK_READY) {
+      try { await window.PATCHWORK_READY; } catch (error) {}
+    }
+    var loaded = await loadInbox();
+    if (loaded !== false) renderInboxList();
+  }
+
+  function scheduleInboxLoad() {
+    if (window.PatchworkAPI) {
+      loadInbox();
+      return;
+    }
+    var retry = function () { loadInbox(); };
+    if (document.readyState === 'complete') window.setTimeout(retry, 0);
+    else window.addEventListener('load', retry, { once: true });
+  }
+
+  async function loadInbox() {
+    var profile = window.PATCHWORK_PROFILE;
+    if (!profile || !window.PatchworkAPI) {
+      inboxItems = [];
+      updateInboxBadge();
+      return true;
+    }
+    if (inboxLoading) return true;
+    inboxLoading = true;
+    try {
+      var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]);
+      var bugs = result[0] || [];
+      var profiles = result[1] || [];
+      var profileMap = {};
+      profiles.forEach(function (person) { profileMap[person.id] = person; });
+      var reviewStage = Number(profile.review_stage);
+      var items = [];
+      bugs.forEach(function (bug) {
+        var type = '';
+        var personName = '';
+        if (bug.status === 'rejected' && bug.submitter_id === profile.id) {
+          type = 'reject';
+          var reviewer = profileMap[bug.reviewer_id];
+          personName = reviewer ? (reviewer.full_name || reviewer.username) : '审核人';
+        } else if (reviewStage && bug.status === (reviewStage === 1 ? 'pending_review_1' : 'pending_review_2')) {
+          type = 'review';
+          var submitter = profileMap[bug.submitter_id];
+          personName = submitter ? (submitter.full_name || submitter.username) : (bug.reporter || '提交人');
+        }
+        if (!type) return;
+        items.push({
+          id: type + ':' + bug.id + ':' + (bug.updated_at || bug.created_at || ''),
+          type: type,
+          code: window.PatchworkAPI.reportCode(bug),
+          title: bug.title || '未命名报告',
+          time: type === 'reject' ? (bug.updated_at || bug.created_at) : (bug.created_at || bug.updated_at),
+          person: personName,
+          note: bug.review_note || '',
+          href: (bug.request_type === 'product_change' ? 'product-change-detail.html?bug=' : 'bug-detail.html?bug=') + encodeURIComponent(bug.id)
+        });
+      });
+      items.sort(function (a, b) { return new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime(); });
+      inboxItems = items;
+      if (inboxProfileId !== profile.id) {
+        inboxProfileId = profile.id;
+        loadInboxReadState(profile.id);
+      }
+      updateInboxBadge();
+      var modal = document.getElementById('inboxModal');
+      if (modal && !modal.classList.contains('hidden')) renderInboxList();
+      return true;
+    } catch (error) {
+      var modal = document.getElementById('inboxModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        var list = document.getElementById('inboxList');
+        if (list) list.innerHTML = '<div class="inbox-empty">消息加载失败：' + inboxEscape(error.message || '请稍后重试') + '</div>';
+      }
+      return false;
+    } finally {
+      inboxLoading = false;
+    }
+  }
+
   function renderNavigation() {
     if (!topbar) return;
     var version = window.PATCHWORK_CONFIG && window.PATCHWORK_CONFIG.version ? window.PATCHWORK_CONFIG.version : '1.1.2';
@@ -33,7 +224,7 @@
       '<a data-review-only class="review-nav-link hidden" href="review-bugs.html">待审核</a>' +
       '<a data-admin-only class="admin-nav-link hidden" href="user-management.html">超级管理员</a>' +
       '</div><a class="nav-notice" href="announcements.html">公告信息</a><a class="nav-data-board" href="data-dashboard.html">数据看板</a><section class="nav-daily-quote" aria-label="每日短句"><blockquote id="dailyQuoteText">愿每一份努力，都能汇成前进的力量。</blockquote><cite id="dailyQuoteAuthor">— 校缘宝</cite></section></nav>' +
-      '<button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button>';
+      '<div class="topbar-account"><button id="inboxButton" class="inbox-button" type="button" aria-label="打开收件箱"><span class="inbox-label">信息</span><span id="inboxBadge" class="inbox-badge hidden">0</span></button><button id="topUserCard" class="top-user-card" type="button"><span id="topUserAvatar" class="top-user-avatar">?</span><span><strong id="topUserName">当前成员</strong><small id="topUserDepartment">未登录</small></span></button></div>';
 
     topbar.querySelectorAll('[data-nav]').forEach(function (link) {
       var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
@@ -56,6 +247,7 @@
     if (noticeLink) noticeLink.classList.toggle('active', page === 'announcements.html' || page === 'announcement-detail.html');
     topbar.querySelector('.nav-data-board').classList.toggle('active', page === 'data-dashboard.html');
     document.getElementById('topUserCard').addEventListener('click', openProfileModal);
+    document.getElementById('inboxButton').addEventListener('click', openInbox);
     loadDailyQuote();
   }
 
@@ -169,5 +361,10 @@
 
   renderNavigation();
   syncProfile();
-  if (window.PATCHWORK_READY) window.PATCHWORK_READY.then(syncProfile);
+  if (window.PATCHWORK_READY) {
+    window.PATCHWORK_READY.then(function () {
+      syncProfile();
+      scheduleInboxLoad();
+    });
+  }
 })();

@@ -8,6 +8,6 @@
     storageBucket: 'bug-attachments',
     testCaseStorageBucket: 'test-case-files',
     authEmailDomain: 'team.xiaoyuanbao.internal',
-    version: '1.3'
+    version: '1.3.1'
   };
 })();
