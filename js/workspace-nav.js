@@ -4,6 +4,18 @@
   var topbar = document.querySelector('.topbar');
   var department = new URLSearchParams(window.location.search).get('department');
   var page = window.location.pathname.split('/').pop() || 'index.html';
+  var TECH_DEPARTMENTS = ['技术—前端', '技术—后端'];
+
+  function isTechLeader(profile) {
+    return Boolean(profile && profile.role === 'leader' && TECH_DEPARTMENTS.indexOf(profile.department) !== -1);
+  }
+
+  function canAccessDepartment(profile, target) {
+    if (!profile || !target) return false;
+    if (profile.role === 'admin') return true;
+    if (isTechLeader(profile) && TECH_DEPARTMENTS.indexOf(target) !== -1) return true;
+    return profile.department === target;
+  }
 
   function renderNavigation() {
     if (!topbar) return;
@@ -130,7 +142,7 @@
       var productLead = isProductLead;
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
       document.querySelectorAll('.nav-menu-card a').forEach(function (link) {
-        var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : link.dataset.department === profile.department;
+        var isAllowed = link.dataset.nav === 'home' ? profile.department === '测试' : canAccessDepartment(profile, link.dataset.department);
         if (link.dataset.nav === 'home' && productLead) isAllowed = profile.department === '测试';
         if (link.hasAttribute('data-admin-only')) isAllowed = false;
         if (link.hasAttribute('data-review-only')) isAllowed = Number(profile.review_stage) > 0;
@@ -149,7 +161,7 @@
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');
-      } else if (profile.department !== '测试' && !isProductUploadPage && !isReviewerEditPage && (!isDepartmentPage || currentDepartment !== profile.department)) {
+      } else if (profile.department !== '测试' && !isProductUploadPage && !isReviewerEditPage && (!isDepartmentPage || !canAccessDepartment(profile, currentDepartment))) {
         window.location.replace('department-bugs.html?department=' + encodeURIComponent(profile.department));
       }
     }
