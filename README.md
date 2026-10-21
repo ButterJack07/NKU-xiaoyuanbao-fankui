@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.4
+1.4.1
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.4'
+  version: '1.4.1'
 };
 ```
 

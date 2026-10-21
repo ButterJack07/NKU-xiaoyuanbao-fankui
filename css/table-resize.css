@@ -1,0 +1,8 @@
+.table-resizable th { position: relative; }
+.table-resizable td { overflow: hidden; }
+.table-col-resizer { position: absolute; z-index: 4; top: 0; right: -6px; width: 12px; height: 100%; cursor: col-resize; touch-action: none; }
+.table-col-resizer::after { content: ''; position: absolute; top: 18%; bottom: 18%; left: 6px; width: 1px; background: #c7b8a3; opacity: 0; transition: opacity .15s; }
+.table-resizable th:hover > .table-col-resizer::after, .table-col-resizer:hover::after, .table-col-resizing .table-col-resizer::after { opacity: 1; }
+.table-col-resizing { cursor: col-resize; }
+body.table-col-resizing, body.table-col-resizing * { cursor: col-resize !important; user-select: none; }
+.cases-table-card, .users-table-card, .department-table-card { overflow-x: auto; overflow-y: hidden; }
