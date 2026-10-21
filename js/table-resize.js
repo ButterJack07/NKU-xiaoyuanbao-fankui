@@ -1,9 +1,10 @@
 (function () {
   'use strict';
 
-  var STORAGE_PREFIX = 'patchwork:table-widths:v1:';
+  var STORAGE_PREFIX = 'patchwork:table-widths:v2:';
   var MIN_WIDTH = 36;
   var MAX_MIN_WIDTH = 64;
+  var TITLE_RATIO = 0.25;
   var initialized = new WeakSet();
   var observed = new WeakSet();
   var pending = [];
@@ -109,6 +110,26 @@
     });
   }
 
+  function defaultRatios(headers, widths, total) {
+    var natural = widths.map(function (width) { return width / total; });
+    if (headers.length < 3) return natural;
+    var titleIndex = -1;
+    for (var index = 0; index < headers.length; index += 1) {
+      if (headerLabel(headers[index]).indexOf('标题') !== -1) {
+        titleIndex = index;
+        break;
+      }
+    }
+    if (titleIndex === -1) return natural;
+    var otherTotal = natural.reduce(function (sum, ratio, index) {
+      return index === titleIndex ? sum : sum + ratio;
+    }, 0);
+    if (!otherTotal) return natural;
+    return natural.map(function (ratio, index) {
+      return index === titleIndex ? TITLE_RATIO : ratio / otherTotal * (1 - TITLE_RATIO);
+    });
+  }
+
   function resetTable(meta) {
     clearRatios(meta.key);
     applyRatios(meta.table, meta, meta.defaults.slice());
@@ -202,7 +223,7 @@
     var total = widths.reduce(function (sum, width) { return sum + width; }, 0);
     if (!total) return false;
 
-    var naturalRatios = widths.map(function (width) { return width / total; });
+    var naturalRatios = defaultRatios(headers, widths, total);
     var key = storageKey(table, headers);
     var ratios = loadRatios(key, headers) || naturalRatios.slice();
     var meta = {
