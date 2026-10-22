@@ -7,7 +7,7 @@
   function isDistributed(status) { return DISTRIBUTED.indexOf(status) !== -1; }
   function ensureAssigneeModal() {
     if (!document.getElementById('assigneeModal')) {
-      var modal = document.createElement('div'); modal.id = 'assigneeModal'; modal.className = 'modal-backdrop hidden'; modal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="assigneeBugInfo" class="user-modal-identity"></p><p class="user-modal-help">本部门所有成员均可指定或修改跟进人。</p></div><button id="closeAssigneeModal" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="assigneeSelect"><option value="">请选择本部门成员</option></select></label><p id="currentAssigneeHint" class="user-modal-help"></p><p id="assigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>'; document.body.appendChild(modal);
+      var modal = document.createElement('div'); modal.id = 'assigneeModal'; modal.className = 'modal-backdrop hidden'; modal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="assigneeBugInfo" class="user-modal-identity"></p><p class="user-modal-help">本部门成员可将跟进人设为待定；组长或超级管理员可指定具体成员。</p></div><button id="closeAssigneeModal" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="assigneeSelect"><option value="">待定</option></select></label><p id="currentAssigneeHint" class="user-modal-help"></p><p id="assigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>'; document.body.appendChild(modal);
     }
     if (!document.getElementById('statusModal')) { var statusModal = document.createElement('div'); statusModal.id = 'statusModal'; statusModal.className = 'modal-backdrop hidden'; statusModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>更改当前状态</h2><p id="statusBugInfo" class="user-modal-identity"></p><p class="user-modal-help">仅当前指定跟进人可提交状态变更。</p></div><button id="closeStatusModal" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>当前状态</span><select id="statusSelect"><option value="open">待处理</option><option value="in_progress">处理中</option><option value="resolved">已完成</option></select></label><p class="user-modal-help">可选：待处理 / 处理中 / 已完成</p><p id="statusError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelStatus" class="user-cancel-button" type="button">取消</button><button id="confirmStatus" class="case-action-button" type="button">确认更改</button></div></div></section>'; document.body.appendChild(statusModal); }
     if (!document.getElementById('transferModal')) { var transferModal = document.createElement('div'); transferModal.id = 'transferModal'; transferModal.className = 'modal-backdrop hidden'; transferModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>转组</h2><p id="transferBugInfo" class="user-modal-identity"></p><p class="user-modal-help">仅当前所属部门组长或超级管理员可发起转组；系统将记录原部门、目标部门、转组人、时间和原因。</p></div><button id="closeTransferModal" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>新归属部门 <i>*</i></span><select id="transferDepartment"><option value="">请选择新部门</option></select></label><label class="field"><span>转组原因（选填）</span><textarea id="transferReason" rows="4" placeholder="请说明转组原因"></textarea></label><p id="transferError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelTransfer" class="user-cancel-button" type="button">取消</button><button id="confirmTransfer" class="case-action-button" type="button">确认转组</button></div></div></section>'; document.body.appendChild(transferModal); }
@@ -39,6 +39,11 @@
     return bugDepartments().indexOf(dep) !== -1 ? dep : (p.role === 'admin' ? bugDepartments()[0] : null);
   }
   function processingState() { return window.PatchworkAPI.departmentState(bug, processingDepartment()); }
+  function assigneePermissions() {
+    var profile = window.PATCHWORK_PROFILE || {}, department = processingDepartment();
+    var admin = profile.role === 'admin', leader = profile.role === 'leader' && profile.department === department;
+    return { department: department, admin: admin, leader: leader, canAssign: Boolean(admin || leader), canPending: Boolean(profile.department === department) };
+  }
   async function saveDepartmentPatch(patch) {
     var department = processingDepartment();
     if (!department) throw new Error('请从对应部门列表进入此任务。');
@@ -85,7 +90,7 @@
     document.getElementById('detailReporter').textContent = bug.reporter || '—'; document.getElementById('detailCreated').textContent = date(bug.created_at); document.getElementById('detailDepartment').textContent = bugDepartments().join('、') || '—';
     document.getElementById('detailModule').textContent = bug.module || '—'; document.getElementById('detailDescription').textContent = bug.request_type === 'product_change' ? bug.change_reason || bug.description || '—' : bug.description || '—'; document.getElementById('detailSteps').textContent = bug.request_type === 'product_change' ? bug.before_logic || '—' : bug.repro_steps || '—'; document.getElementById('detailExpected').textContent = bug.request_type === 'product_change' ? bug.after_logic || '—' : bug.expected_result || '—'; document.getElementById('detailActual').textContent = bug.request_type === 'product_change' ? bug.exception_handling || '—' : bug.actual_result || '—'; document.getElementById('detailImportance').textContent = importanceText[bug.importance] || bug.importance || '—'; var code = window.PatchworkAPI.reportCode(bug); document.getElementById('detailAttachments').innerHTML = attachmentSummary(bug.attachment_urls || [], code);
     var department = processingDepartment(), state = processingState();
-    document.getElementById('detailAssignee').textContent = department ? state.assignee || '—' : '请查看各部门处理信息'; document.getElementById('detailContact').textContent = '联系提交人'; document.getElementById('detailStatus').textContent = (isDistributed(bug.status) && department ? department + '：' + (statusText[state.status] || state.status) : statusText[bug.status]) || '—'; document.getElementById('detailNote').textContent = department && isDistributed(bug.status) ? state.note || '暂无本部门备注' : bug.review_note || '暂无备注';
+    document.getElementById('detailAssignee').textContent = department ? state.assignee || '待定' : '请查看各部门处理信息'; document.getElementById('detailContact').textContent = '联系提交人'; document.getElementById('detailStatus').textContent = (isDistributed(bug.status) && department ? department + '：' + (statusText[state.status] || state.status) : statusText[bug.status]) || '—'; document.getElementById('detailNote').textContent = department && isDistributed(bug.status) ? state.note || '暂无本部门备注' : bug.review_note || '暂无备注';
     var note;
     if (bug.status === 'pending_review_1') note = '报告处于待第一审核状态，由超级管理员指定的第一审核人审核；审核人可填写备注，备注对所有成员可见。';
     else if (bug.status === 'pending_review_2') note = '第一审核已通过，等待超级管理员指定的第二审核人审核；通过后将分发至对应部门。';
@@ -93,25 +98,26 @@
     else if (bug.status === 'postponed') note = '已暂缓上传，暂不分发，报告保留在测试组列表，可稍后重新提交审核。';
     else note = current === '测试' ? '测试普通成员可查看；指定跟进人和转组仅测试组长、超级管理员可操作。' : current + '成员可指定跟进人与处理；转组仅本部门组长、超级管理员可操作。';
     document.getElementById('permissionNote').textContent = note;
-    if (isDistributed(bug.status)) document.getElementById('permissionNote').textContent = department ? '当前处理部门：' + department + '。状态、跟进人和备注仅作用于本部门；处理部门组长或超级管理员可更新处理部门。' : '这里显示报告总体状态。各处理部门独立处理，详情见下方各部门处理情况。';
+    if (isDistributed(bug.status)) document.getElementById('permissionNote').textContent = department ? '当前处理部门：' + department + '。状态、跟进人和备注仅作用于本部门；部门成员可将跟进人设为待定，处理部门组长或超级管理员可更新处理部门。' : '这里显示报告总体状态。各处理部门独立处理，详情见下方各部门处理情况。';
     var distributed = isDistributed(bug.status);
     var admin = p && p.role === 'admin', leader = p && p.role === 'leader' && p.department === department, assignee = p && state.assignee_id === p.id, testView = !department;
     var assigneeButton = document.getElementById('assigneeButton'); var transferButton = document.getElementById('transferButton'); var statusButton = document.getElementById('statusButton'); var noteButton = document.getElementById('noteButton');
     var canOperate = Boolean(admin || leader || assignee);
-    assigneeButton.classList.toggle('hidden', !distributed || testView || !(admin || leader));
+    var assigneeAccess = assigneePermissions(), canSetAssignee = Boolean(distributed && !testView && (assigneeAccess.canAssign || assigneeAccess.canPending));
+    assigneeButton.classList.toggle('hidden', !canSetAssignee);
     transferButton.classList.toggle('hidden', !distributed || !(admin || leader));
     transferButton.textContent = '更新处理部门';
     statusButton.classList.toggle('hidden', !distributed || testView || !canOperate);
     noteButton.classList.toggle('hidden', !distributed || testView || !canOperate);
-    assigneeButton.disabled = !(admin || leader);
-    assigneeButton.title = department ? '指定' + department + '的跟进人' : '';
+    assigneeButton.disabled = !canSetAssignee;
+    assigneeButton.title = department ? (assigneeAccess.canAssign ? '指定或修改' + department + '的跟进人' : '将' + department + '跟进人设为待定') : '';
     transferButton.disabled = !(admin || leader);
     statusButton.disabled = !canOperate;
     document.getElementById('detailActionPanel').classList.add('hidden');
     renderReviewCard();
     var progress = document.getElementById('departmentProgressCard');
     if (!progress) { progress = document.createElement('section'); progress.id = 'departmentProgressCard'; progress.className = 'detail-card review-card'; document.querySelector('.bug-detail-grid').appendChild(progress); }
-    progress.innerHTML = '<h2>各部门处理情况</h2>' + bugDepartments().map(function (dep) { var item = window.PatchworkAPI.departmentState(bug, dep); return '<div class="department-progress-row"><strong>' + esc(dep) + '</strong><span>' + esc(distributed ? statusText[item.status] : '未分发') + '</span><span>跟进人：' + esc(item.assignee || '未指定') + '</span><small>' + esc(item.note || '') + '</small></div>'; }).join('');
+    progress.innerHTML = '<h2>各部门处理情况</h2>' + bugDepartments().map(function (dep) { var item = window.PatchworkAPI.departmentState(bug, dep); return '<div class="department-progress-row"><strong>' + esc(dep) + '</strong><span>' + esc(distributed ? statusText[item.status] : '未分发') + '</span><span>跟进人：' + esc(item.assignee || '待定') + '</span><small>' + esc(item.note || '') + '</small></div>'; }).join('');
     var changesCard = document.getElementById('departmentChangeHistory');
     if (!changesCard) { changesCard = document.createElement('section'); changesCard.id = 'departmentChangeHistory'; changesCard.className = 'detail-card review-card'; document.querySelector('.bug-detail-grid').appendChild(changesCard); }
     changesCard.innerHTML = '<h2>处理部门更新记录</h2>' + (departmentChanges.length ? departmentChanges.map(function (change) { return '<p><strong>' + date(change.created_at) + '</strong> · ' + esc(change.changed_by_name || '成员') + ' · ' + esc(change.previous_departments || '无') + ' → ' + esc(change.next_departments || '无') + (change.note ? '<br>' + esc(change.note) : '') + '</p>'; }).join('') : '<p class="review-event-empty">暂无处理部门更新记录。</p>');
@@ -154,9 +160,41 @@
     finally { button.disabled = false; button.textContent = '保存处理部门'; }
   }
   async function saveAction() { var type = document.getElementById('detailActionPanel').dataset.type, value = document.getElementById('actionInput').value.trim(), patch = {}; if (type === 'note') patch.transfer_note = value; else if (type === 'status') patch.status = value || bug.status; else if (type === 'assignee') patch.assignee = value; else patch.transfer_note = value; try { var updated = await window.PatchworkAPI.updateBug(bug.id, patch); bug = updated[0] || Object.assign({}, bug, patch); render(); document.getElementById('detailActionPanel').classList.add('hidden'); toast('缺陷信息已更新。', 'success'); } catch (e) { toast(e.message || '更新失败。', 'error'); } }
-  function openAssigneeModal() { var select = document.getElementById('assigneeSelect'); if (!select) return; var department = processingDepartment(); select.innerHTML = '<option value="">请选择本部门成员</option>' + members.filter(function (item) { return item.department === department; }).map(function (item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join(''); select.value = processingState().assignee_id || ''; document.getElementById('assigneeBugInfo').textContent = bugLabel(); document.getElementById('currentAssigneeHint').textContent = '当前跟进人：' + (processingState().assignee || '—') + '（' + department + '部门）'; document.getElementById('assigneeModal').classList.remove('hidden'); }
+  function openAssigneeModal() {
+    var select = document.getElementById('assigneeSelect');
+    if (!select) return;
+    var permissions = assigneePermissions(), department = permissions.department;
+    if (!department) return;
+    var memberOptions = permissions.canAssign ? members.filter(function (item) { return item.department === department; }).map(function (item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join('') : '';
+    select.innerHTML = '<option value="">待定</option>' + memberOptions;
+    select.value = processingState().assignee_id || '';
+    document.getElementById('assigneeBugInfo').textContent = bugLabel();
+    document.getElementById('currentAssigneeHint').textContent = '当前跟进人：' + (processingState().assignee || '待定') + '（' + department + '部门）';
+    document.getElementById('assigneeError').classList.add('hidden');
+    document.getElementById('assigneeModal').classList.remove('hidden');
+  }
   function closeAssigneeModal() { document.getElementById('assigneeModal').classList.add('hidden'); }
-  async function confirmAssignee() { var selectedId = document.getElementById('assigneeSelect').value, selected = members.find(function (item) { return item.id === selectedId; }), error = document.getElementById('assigneeError'), button = document.getElementById('confirmAssignee'); if (!selected) { error.textContent = '请选择本部门成员。'; error.classList.remove('hidden'); return; } button.disabled = true; button.textContent = '保存中…'; try { await saveDepartmentPatch({ assignee_id: selected.id }); closeAssigneeModal(); render(); toast('本部门跟进人已更新。', 'success'); } catch (e) { error.textContent = e.message || '指定跟进人失败。'; error.classList.remove('hidden'); } finally { button.disabled = false; button.textContent = '确认指定'; } }
+  async function confirmAssignee() {
+    var selectedId = document.getElementById('assigneeSelect').value, selected = selectedId ? members.find(function (item) { return item.id === selectedId; }) : null;
+    var permissions = assigneePermissions(), error = document.getElementById('assigneeError'), button = document.getElementById('confirmAssignee');
+    if (!permissions.canAssign && !permissions.canPending) { error.textContent = '当前账号不能修改本部门跟进人。'; error.classList.remove('hidden'); return; }
+    if (selectedId && !selected) { error.textContent = '请选择本部门成员或待定。'; error.classList.remove('hidden'); return; }
+    if (selectedId && !permissions.canAssign) { error.textContent = '仅本部门组长或超级管理员可指定具体成员。'; error.classList.remove('hidden'); return; }
+    button.disabled = true;
+    button.textContent = '保存中…';
+    try {
+      await saveDepartmentPatch({ assignee_id: selected ? selected.id : null });
+      closeAssigneeModal();
+      render();
+      toast(selected ? '本部门跟进人已更新。' : '本部门跟进人已设为待定。', 'success');
+    } catch (e) {
+      error.textContent = e.message || '指定跟进人失败。';
+      error.classList.remove('hidden');
+    } finally {
+      button.disabled = false;
+      button.textContent = '确认指定';
+    }
+  }
 
   function openReviewModal() { document.getElementById('reviewModalTitle').textContent = (currentStage() === 1 ? '一审' : '二审') + '：' + bugLabel(); document.getElementById('reviewBugInfo').textContent = bugLabel(); document.getElementById('reviewAction').value = 'approve'; document.getElementById('reviewNote').value = ''; document.getElementById('reviewError').classList.add('hidden'); document.getElementById('reviewModal').classList.remove('hidden'); }
   function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); }

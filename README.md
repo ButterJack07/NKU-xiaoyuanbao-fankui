@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.5
+1.5.1
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.5'
+  version: '1.5.1'
 };
 ```
 
@@ -155,6 +155,7 @@ SUPABASE_ANON_KEY
 - 全部登录成员可从“公告信息”下方进入 `data-dashboard.html`，查看报告状态圆环和四部门处理总表；未分发报告单独统计。
 - 数据库更新通过行锁 RPC 执行，避免并发时覆盖其他部门的处理信息。
 - 产品负责人可在产品修改需求详情页选择处理部门，更新备注、跟进人、状态和处理部门。启用该权限前执行 `supabase-product-request-actions.sql`。
+- 缺陷报告和产品修改需求都支持“待定”跟进人。被分发部门成员可将本部门跟进人设为待定；具体成员仍由本部门组长、产品负责人或超级管理员指定。已有数据库执行 `supabase-pending-assignee.sql` 启用该权限。
 
 不要直接双击 HTML 文件。使用 HTTP 静态服务器：
 

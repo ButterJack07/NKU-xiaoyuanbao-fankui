@@ -18,8 +18,8 @@
   function selectedActionDepartment() { var select = document.getElementById('requestActionDepartment'); return select && select.value ? select.value : ''; }
   function actionState(dep) { return window.PatchworkAPI.departmentState(bug, dep); }
   function actionPermissions(dep, state) {
-    var profile = currentProfile(), manager = isProductManager(profile), leader = Boolean(profile.role === 'leader' && profile.department === dep), assignee = Boolean(state.assignee_id && state.assignee_id === profile.id);
-    return { manager: manager, assign: manager || leader, operate: manager || leader || assignee };
+    var profile = currentProfile(), manager = isProductManager(profile), leader = Boolean(profile.role === 'leader' && profile.department === dep), assignee = Boolean(state.assignee_id && state.assignee_id === profile.id), member = Boolean(profile.department === dep);
+    return { manager: manager, assign: manager || leader, pending: member, operate: manager || leader || assignee };
   }
   function setupBreadcrumb() {
     var profile = window.PATCHWORK_PROFILE || {}, home = document.getElementById('requestHomeLink'), list = document.getElementById('requestListLink');
@@ -98,13 +98,13 @@
     document.getElementById('requestActionAssignee').textContent=target?(currentState.assignee||'待定'):'—';
     document.getElementById('requestActionStatus').textContent=target?(statusText[currentState.status]||currentState.status||'未处理'):'—';
     document.getElementById('requestActionNote').textContent=target?(currentState.note||'暂无备注'):'暂无备注';
-    var canAssign=Boolean(target&&permissions.assign), canOperate=Boolean(target&&permissions.operate);
+    var canAssign=Boolean(target&&permissions.assign), canPending=Boolean(target&&permissions.pending), canSetAssignee=canAssign||canPending, canOperate=Boolean(target&&permissions.operate);
     document.getElementById('requestNoteButton').classList.toggle('hidden', !canOperate);
-    document.getElementById('requestAssigneeButton').classList.toggle('hidden', !canAssign);
+    document.getElementById('requestAssigneeButton').classList.toggle('hidden', !canSetAssignee);
     document.getElementById('requestTransferButton').classList.toggle('hidden', !canAssign);
     document.getElementById('requestStatusButton').classList.toggle('hidden', !canOperate);
-    document.getElementById('requestAssigneeButton').title=target?'指定'+target+'的跟进人':'';
-    document.getElementById('requestNotice').textContent=!target?'当前账号暂无可操作的处理部门。':permissions.manager?'可切换处理部门并更新其备注、跟进人、状态和处理部门；各部门状态互不影响。':permissions.assign?'当前处理部门：'+target+'。可更新本部门备注、跟进人、状态和处理部门。':permissions.operate?'当前处理部门：'+target+'。可填写本部门备注并更新状态。':'当前处理部门：'+target+'。仅对应部门成员可处理，产品负责人可更新全部部门。';
+    document.getElementById('requestAssigneeButton').title=target?(canAssign?'指定或修改'+target+'的跟进人':'将'+target+'跟进人设为待定'):'';
+    document.getElementById('requestNotice').textContent=!target?'当前账号暂无可操作的处理部门。':permissions.manager?'可切换处理部门并更新其备注、跟进人、状态和处理部门；各部门状态互不影响。':permissions.assign?'当前处理部门：'+target+'。可更新本部门备注、跟进人、状态和处理部门。':permissions.operate?'当前处理部门：'+target+'。可填写本部门备注并更新状态。':canPending?'当前处理部门：'+target+'。可将本部门跟进人设为待定。':'当前处理部门：'+target+'。仅对应部门成员可处理，产品负责人可更新全部部门。';
     document.getElementById('requestDepartmentRows').innerHTML=reportDepartments().map(function(dep){
       var item=window.PatchworkAPI.departmentState(bug,dep), label=statusText[item.status]||item.status||'未处理';
       var canComment=isProductManager(profile)||profile.department===dep;
@@ -119,7 +119,7 @@
       var assigneeModal = document.createElement('div');
       assigneeModal.id = 'requestAssigneeModal';
       assigneeModal.className = 'modal-backdrop hidden';
-      assigneeModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="requestAssigneeInfo" class="user-modal-identity"></p><p class="user-modal-help">仅可选择当前处理部门的成员。</p></div><button id="closeRequestAssignee" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="requestAssigneeSelect"><option value="">待定</option></select></label><p id="requestCurrentAssigneeHint" class="user-modal-help"></p><p id="requestAssigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelRequestAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmRequestAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>';
+      assigneeModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="requestAssigneeInfo" class="user-modal-identity"></p><p class="user-modal-help">可选择待定；组长或产品负责人可指定当前处理部门的具体成员。</p></div><button id="closeRequestAssignee" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="requestAssigneeSelect"><option value="">待定</option></select></label><p id="requestCurrentAssigneeHint" class="user-modal-help"></p><p id="requestAssigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelRequestAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmRequestAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>';
       document.body.appendChild(assigneeModal);
     }
     if (!document.getElementById('requestStatusModal')) {
@@ -179,8 +179,9 @@
     var dep = selectedActionDepartment();
     if (!dep) return;
     ensureActionModals();
-    var state = actionState(dep), select = document.getElementById('requestAssigneeSelect');
-    select.innerHTML = '<option value="">待定</option>' + members.filter(function(item) { return item.department === dep; }).map(function(item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join('');
+    var state = actionState(dep), select = document.getElementById('requestAssigneeSelect'), permissions = actionPermissions(dep, state);
+    var memberOptions = permissions.assign ? members.filter(function(item) { return item.department === dep; }).map(function(item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join('') : '';
+    select.innerHTML = '<option value="">待定</option>' + memberOptions;
     select.value = state.assignee_id || '';
     document.getElementById('requestAssigneeInfo').textContent = reportLabel() + ' · ' + dep;
     document.getElementById('requestCurrentAssigneeHint').textContent = '当前跟进人：' + (state.assignee || '待定') + '（' + dep + '）';
@@ -191,7 +192,11 @@
   async function confirmRequestAssignee() {
     var dep = selectedActionDepartment(), selectedId = document.getElementById('requestAssigneeSelect').value, selected = selectedId ? members.find(function(item) { return item.id === selectedId; }) : null;
     var error = document.getElementById('requestAssigneeError'), button = document.getElementById('confirmRequestAssignee');
-    if (!dep || (selectedId && !selected)) { error.textContent = '请选择本部门成员或待定。'; error.classList.remove('hidden'); return; }
+    if (!dep) { error.textContent = '当前没有可操作的处理部门。'; error.classList.remove('hidden'); return; }
+    var permissions = actionPermissions(dep, actionState(dep));
+    if (!permissions.assign && !permissions.pending) { error.textContent = '当前账号不能修改本部门跟进人。'; error.classList.remove('hidden'); return; }
+    if (selectedId && !selected) { error.textContent = '请选择本部门成员或待定。'; error.classList.remove('hidden'); return; }
+    if (selectedId && !permissions.assign) { error.textContent = '仅本部门组长或产品负责人可指定具体成员。'; error.classList.remove('hidden'); return; }
     button.disabled = true;
     button.textContent = '保存中…';
     try {
