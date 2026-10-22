@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.4.1
+1.5
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.4.1'
+  version: '1.5'
 };
 ```
 
@@ -154,6 +154,7 @@ SUPABASE_ANON_KEY
 - 部门列表和导出显示本部门状态；所有已分配部门都完成时报告才算完成，部分完成也计为处理中。
 - 全部登录成员可从“公告信息”下方进入 `data-dashboard.html`，查看报告状态圆环和四部门处理总表；未分发报告单独统计。
 - 数据库更新通过行锁 RPC 执行，避免并发时覆盖其他部门的处理信息。
+- 产品负责人可在产品修改需求详情页选择处理部门，更新备注、跟进人、状态和处理部门。启用该权限前执行 `supabase-product-request-actions.sql`。
 
 不要直接双击 HTML 文件。使用 HTTP 静态服务器：
 
