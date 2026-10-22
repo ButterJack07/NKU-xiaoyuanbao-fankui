@@ -95,7 +95,7 @@
     departmentSelect.value=target;
     departmentSelect.disabled=available.length<=1;
     var currentState=target?actionState(target):{status:'open',assignee:'',assignee_id:null,note:''}, permissions=actionPermissions(target,currentState);
-    document.getElementById('requestActionAssignee').textContent=target?(currentState.assignee||'未指定'):'—';
+    document.getElementById('requestActionAssignee').textContent=target?(currentState.assignee||'待定'):'—';
     document.getElementById('requestActionStatus').textContent=target?(statusText[currentState.status]||currentState.status||'未处理'):'—';
     document.getElementById('requestActionNote').textContent=target?(currentState.note||'暂无备注'):'暂无备注';
     var canAssign=Boolean(target&&permissions.assign), canOperate=Boolean(target&&permissions.operate);
@@ -109,7 +109,7 @@
       var item=window.PatchworkAPI.departmentState(bug,dep), label=statusText[item.status]||item.status||'未处理';
       var canComment=isProductManager(profile)||profile.department===dep;
       var noteEditor=canComment?'<form class="request-note-form" data-note-form="'+esc(dep)+'"><label><span>添加跟进备注</span><textarea name="note" rows="2" maxlength="3000" placeholder="补充本部门处理进展"></textarea></label><button class="case-action-button" type="submit">添加备注</button><p class="request-note-feedback hidden" aria-live="polite"></p></form>':'';
-      return '<article class="request-department-card"><header><div class="request-department-identity"><span class="request-department-mark">'+esc(dep.slice(-2))+'</span><div><strong>'+esc(dep)+'</strong><small>处理部门</small></div></div><span class="overview-status overview-'+esc(item.status)+'">'+esc(label)+'</span></header><div class="request-department-meta"><div><span>跟进人</span><strong>'+esc(item.assignee||'未指定')+'</strong></div><div><span>处理状态</span><strong>'+esc(label)+'</strong></div></div><div class="request-department-note"><span>跟进备注</span><p>'+esc(item.note||'暂无备注')+'</p></div>'+noteEditor+'</article>';
+      return '<article class="request-department-card"><header><div class="request-department-identity"><span class="request-department-mark">'+esc(dep.slice(-2))+'</span><div><strong>'+esc(dep)+'</strong><small>处理部门</small></div></div><span class="overview-status overview-'+esc(item.status)+'">'+esc(label)+'</span></header><div class="request-department-meta"><div><span>跟进人</span><strong>'+esc(item.assignee||'待定')+'</strong></div><div><span>处理状态</span><strong>'+esc(label)+'</strong></div></div><div class="request-department-note"><span>跟进备注</span><p>'+esc(item.note||'暂无备注')+'</p></div>'+noteEditor+'</article>';
     }).join('');
     document.querySelectorAll('[data-note-form]').forEach(function(form){form.onsubmit=async function(event){event.preventDefault();var dep=form.dataset.noteForm,textarea=form.elements.note,value=textarea.value.trim(),feedback=form.querySelector('.request-note-feedback'),button=form.querySelector('button[type="submit"]');if(!value){feedback.textContent='请填写跟进备注。';feedback.classList.remove('hidden');return;}button.disabled=true;feedback.classList.add('hidden');try{var result=await window.PatchworkAPI.updateDepartmentProgress(bug.id,dep,{note:value});if(!result||!result[0])throw new Error('备注未保存');bug=result[0];render();toast(dep+'跟进备注已添加。','success');}catch(error){feedback.textContent=error.message||'备注保存失败。';feedback.classList.remove('hidden');button.disabled=false;}};});
   }
@@ -119,7 +119,7 @@
       var assigneeModal = document.createElement('div');
       assigneeModal.id = 'requestAssigneeModal';
       assigneeModal.className = 'modal-backdrop hidden';
-      assigneeModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="requestAssigneeInfo" class="user-modal-identity"></p><p class="user-modal-help">仅可选择当前处理部门的成员。</p></div><button id="closeRequestAssignee" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="requestAssigneeSelect"><option value="">请选择本部门成员</option></select></label><p id="requestCurrentAssigneeHint" class="user-modal-help"></p><p id="requestAssigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelRequestAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmRequestAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>';
+      assigneeModal.innerHTML = '<section class="user-modal assignee-modal"><div class="developer-modal-header"><div><h2>指定跟进人</h2><p id="requestAssigneeInfo" class="user-modal-identity"></p><p class="user-modal-help">仅可选择当前处理部门的成员。</p></div><button id="closeRequestAssignee" class="icon-button" type="button">×</button></div><div class="assignee-form"><label class="field"><span>跟进人</span><select id="requestAssigneeSelect"><option value="">待定</option></select></label><p id="requestCurrentAssigneeHint" class="user-modal-help"></p><p id="requestAssigneeError" class="login-error hidden"></p><div class="edit-user-actions"><button id="cancelRequestAssignee" class="user-cancel-button" type="button">取消</button><button id="confirmRequestAssignee" class="case-action-button" type="button">确认指定</button></div></div></section>';
       document.body.appendChild(assigneeModal);
     }
     if (!document.getElementById('requestStatusModal')) {
@@ -180,27 +180,27 @@
     if (!dep) return;
     ensureActionModals();
     var state = actionState(dep), select = document.getElementById('requestAssigneeSelect');
-    select.innerHTML = '<option value="">请选择本部门成员</option>' + members.filter(function(item) { return item.department === dep; }).map(function(item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join('');
+    select.innerHTML = '<option value="">待定</option>' + members.filter(function(item) { return item.department === dep; }).map(function(item) { return '<option value="' + esc(item.id) + '">' + esc(item.full_name || item.username) + '</option>'; }).join('');
     select.value = state.assignee_id || '';
     document.getElementById('requestAssigneeInfo').textContent = reportLabel() + ' · ' + dep;
-    document.getElementById('requestCurrentAssigneeHint').textContent = '当前跟进人：' + (state.assignee || '—') + '（' + dep + '）';
+    document.getElementById('requestCurrentAssigneeHint').textContent = '当前跟进人：' + (state.assignee || '待定') + '（' + dep + '）';
     document.getElementById('requestAssigneeError').classList.add('hidden');
     document.getElementById('requestAssigneeModal').classList.remove('hidden');
   }
   function closeRequestAssigneeModal() { document.getElementById('requestAssigneeModal').classList.add('hidden'); }
   async function confirmRequestAssignee() {
-    var dep = selectedActionDepartment(), selectedId = document.getElementById('requestAssigneeSelect').value, selected = members.find(function(item) { return item.id === selectedId; });
+    var dep = selectedActionDepartment(), selectedId = document.getElementById('requestAssigneeSelect').value, selected = selectedId ? members.find(function(item) { return item.id === selectedId; }) : null;
     var error = document.getElementById('requestAssigneeError'), button = document.getElementById('confirmRequestAssignee');
-    if (!dep || !selected) { error.textContent = '请选择本部门成员。'; error.classList.remove('hidden'); return; }
+    if (!dep || (selectedId && !selected)) { error.textContent = '请选择本部门成员或待定。'; error.classList.remove('hidden'); return; }
     button.disabled = true;
     button.textContent = '保存中…';
     try {
-      var result = await window.PatchworkAPI.updateDepartmentProgress(bug.id, dep, { assignee_id: selected.id });
+      var result = await window.PatchworkAPI.updateDepartmentProgress(bug.id, dep, { assignee_id: selected ? selected.id : null });
       if (!result || !result[0]) throw new Error('跟进人未保存');
       bug = result[0];
       closeRequestAssigneeModal();
       render();
-      toast(dep + '跟进人已更新。', 'success');
+      toast(dep + (selected ? '跟进人已更新。' : '跟进人已设为待定。'), 'success');
     } catch (e) {
       error.textContent = e.message || '指定跟进人失败。';
       error.classList.remove('hidden');
