@@ -1,18 +1,18 @@
--- 1.5.2：在审核流程、部门进度、产品需求操作及待定跟进人迁移之后执行，可重复执行。
+-- 1.6：在审核流程、部门进度、产品需求操作及待定跟进人迁移之后执行，可重复执行。
 begin;
 alter table public.profiles add column if not exists is_product_deputy boolean not null default false;
 alter table public.profiles drop constraint if exists profiles_product_deputy_check;
 alter table public.profiles add constraint profiles_product_deputy_check check (
-  not is_product_deputy or (department = '产品' and not is_product_lead)
+  not is_product_deputy or not is_product_lead
 );
 
 create or replace function public.is_product_lead()
 returns boolean language sql stable security definer set search_path = public
-as $$ select exists(select 1 from profiles where id=auth.uid() and active and is_product_lead and (department='产品' or role='admin')); $$;
+as $$ select exists(select 1 from profiles where id=auth.uid() and active and is_product_lead); $$;
 
 create or replace function public.is_product_deputy()
 returns boolean language sql stable security definer set search_path = public
-as $$ select exists(select 1 from profiles where id=auth.uid() and active and department='产品' and is_product_deputy and not is_product_lead); $$;
+as $$ select exists(select 1 from profiles where id=auth.uid() and active and is_product_deputy and not is_product_lead); $$;
 
 create or replace function public.enforce_bug_report_submission_source()
 returns trigger language plpgsql security definer set search_path = public
@@ -30,7 +30,7 @@ begin
     new.status := 'pending_review_2';
     new.submission_source := 'product';
   elsif new.submission_source = 'product' then
-    if (public.current_department() is distinct from '产品' and not public.is_admin()) or new.status <> 'open' then raise exception '产品端直发仅允许产品部门账号提交'; end if;
+    if not public.is_product_lead() or new.status <> 'open' then raise exception '仅产品负责人或产品副负责人可发布产品缺陷报告'; end if;
   elsif new.submission_source is distinct from 'test' or new.status <> 'pending_review_1' then
     raise exception '测试端缺陷报告必须进入第一审核环节';
   end if;
@@ -45,7 +45,7 @@ create policy "internal create bug reports" on public.bug_reports for insert to 
     (request_type = 'bug' and submission_source = 'test' and status='pending_review_1' and not public.is_product_deputy())
     or (request_type = 'bug' and submission_source='product' and (
       (public.is_product_deputy() and status='pending_review_2')
-      or (not public.is_product_deputy() and (public.current_department()='产品' or public.is_admin()) and status='open')))
+      or (public.is_product_lead() and status='open')))
     or (request_type='product_change' and submission_source='product_change' and (
       (public.is_product_deputy() and status='pending_review_1')
       or ((public.is_product_lead() or public.is_admin()) and not public.is_product_deputy() and status='open')))
@@ -107,6 +107,10 @@ create policy "product lead update change requests" on public.bug_reports for up
 using (request_type='product_change' and public.is_product_lead())
 with check (request_type='product_change' and public.is_product_lead() and char_length(review_note)<=1000);
 
+drop policy if exists "internal delete bug reports" on public.bug_reports;
+create policy "internal delete bug reports" on public.bug_reports for delete to authenticated
+using (public.is_admin() or (submitter_id=auth.uid() and (request_type<>'product_change' or status='rejected')));
+
 create or replace function public.review_product_request(p_bug_id uuid, p_approve boolean, p_note text default '')
 returns setof public.bug_reports language plpgsql security definer set search_path = public
 as $$
@@ -126,5 +130,18 @@ begin
 end $$;
 revoke all on function public.review_product_request(uuid,boolean,text) from public,anon;
 grant execute on function public.review_product_request(uuid,boolean,text) to authenticated;
+
+-- 更新当前安装的处理函数，仅去掉产品负责人身份的部门前置条件，保留已有处理规则。
+do $$
+declare signature text; definition text;
+begin
+  foreach signature in array array['public.sync_bug_department_progress()', 'public.update_bug_department_progress(uuid,text,jsonb)', 'public.update_bug_departments(uuid,text[],text)'] loop
+    if to_regprocedure(signature) is not null then
+      definition := pg_get_functiondef(to_regprocedure(signature));
+      definition := replace(definition, 'actor.department = ''产品'' and actor.is_product_lead', 'actor.is_product_lead');
+      execute definition;
+    end if;
+  end loop;
+end $$;
 notify pgrst, 'reload schema';
 commit;

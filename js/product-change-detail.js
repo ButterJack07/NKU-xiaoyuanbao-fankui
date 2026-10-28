@@ -6,7 +6,7 @@
   var statusText = { open:'未处理', in_progress:'处理中', resolved:'已完成', pending_review_1:'待产品负责人审核', rejected:'已驳回' };
   function esc(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function toast(message, type) { var n=document.getElementById('toast'); n.textContent=message; n.className='toast show '+(type||''); setTimeout(function(){n.className='toast';},3500); }
-  function isProductManager(profile) { return Boolean(profile && (profile.role === 'admin' || (profile.department === '产品' && profile.is_product_lead))); }
+  function isProductManager(profile) { return Boolean(profile && (profile.role === 'admin' || window.PatchworkRoles.productLead(profile))); }
   function currentProfile() { return window.PATCHWORK_PROFILE || {}; }
   function requestedDepartment() { return new URLSearchParams(location.search).get('department') || ''; }
   function actionDepartments() {
@@ -106,6 +106,19 @@
     var ownRejected = bug.submitter_id === profile.id && bug.status === 'rejected';
     var canEdit = ['pending_review_1','rejected'].includes(bug.status) ? window.PatchworkRoles.productLead(profile) || ownRejected : isProductManager(profile);
     document.getElementById('requestEditAction').classList.toggle('hidden', !canEdit);
+    document.getElementById('editProductRequest').textContent = ownRejected ? '修改并重新提交' : '编辑需求内容';
+    document.getElementById('saveProductRequestEdit').textContent = ownRejected ? '保存并重新提交审核' : '保存修改';
+    var deleteButton = document.getElementById('deleteProductRequest');
+    if (!deleteButton) {
+      deleteButton = document.createElement('button');
+      deleteButton.id = 'deleteProductRequest';
+      deleteButton.type = 'button';
+      deleteButton.className = 'detail-muted-button';
+      deleteButton.textContent = '删除需求报告';
+      deleteButton.onclick = deleteRejectedRequest;
+      document.getElementById('requestEditAction').appendChild(deleteButton);
+    }
+    deleteButton.classList.toggle('hidden', !ownRejected);
     renderReview();
     var departmentSelect=document.getElementById('requestActionDepartment'), available=actionDepartments(), previous=departmentSelect.value, requested=requestedDepartment();
     var target=available.indexOf(previous)!==-1?previous:(available.indexOf(requested)!==-1?requested:available[0]||'');
@@ -132,6 +145,20 @@
     document.querySelectorAll('[data-note-form]').forEach(function(form){form.onsubmit=async function(event){event.preventDefault();var dep=form.dataset.noteForm,textarea=form.elements.note,value=textarea.value.trim(),feedback=form.querySelector('.request-note-feedback'),button=form.querySelector('button[type="submit"]');if(!value){feedback.textContent='请填写跟进备注。';feedback.classList.remove('hidden');return;}button.disabled=true;feedback.classList.add('hidden');try{var result=await window.PatchworkAPI.updateDepartmentProgress(bug.id,dep,{note:value});if(!result||!result[0])throw new Error('备注未保存');bug=result[0];render();toast(dep+'跟进备注已添加。','success');}catch(error){feedback.textContent=error.message||'备注保存失败。';feedback.classList.remove('hidden');button.disabled=false;}};});
   }
   function reportLabel() { return window.PatchworkAPI.reportCode(bug) + '｜' + (bug.title || ''); }
+  async function deleteRejectedRequest() {
+    if (bug.status !== 'rejected' || bug.submitter_id !== currentProfile().id) return;
+    if (!window.confirm('确认删除已驳回的需求报告“' + reportLabel() + '”？删除后无法恢复。')) return;
+    var button = document.getElementById('deleteProductRequest');
+    button.disabled = true;
+    try {
+      var deleted = await window.PatchworkAPI.deleteBug(bug.id);
+      if (!deleted || !deleted.length) throw new Error('需求未删除，可能已被处理，请刷新后重试。');
+      window.location.href = 'product-change-requests.html';
+    } catch (error) {
+      toast(error.message || '需求报告删除失败。', 'error');
+      button.disabled = false;
+    }
+  }
   function ensureActionModals() {
     if (!document.getElementById('requestAssigneeModal')) {
       var assigneeModal = document.createElement('div');

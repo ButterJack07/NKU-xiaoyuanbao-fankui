@@ -28,7 +28,7 @@
   function bugDepartments(bug) { return String(bug.assignee_department || '').split(',').map(function (item) { return item.trim(); }).filter(Boolean); }
   var TECH_DEPARTMENTS = ['技术—前端', '技术—后端'];
   function isTechLeader(profile) { return Boolean(profile && profile.role === 'leader' && TECH_DEPARTMENTS.indexOf(profile.department) !== -1); }
-  function canAccessDepartment(profile, target) { if (!profile || !target) return false; if (profile.role === 'admin') return true; if (isTechLeader(profile) && TECH_DEPARTMENTS.indexOf(target) !== -1) return true; return profile.department === target; }
+  function canAccessDepartment(profile, target) { if (!profile || !target) return false; if (profile.role === 'admin') return true; if (target === '产品' && window.PatchworkRoles.productWorkspace(profile)) return true; if (isTechLeader(profile) && TECH_DEPARTMENTS.indexOf(target) !== -1) return true; return profile.department === target; }
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -294,7 +294,7 @@
     if (accessDenied) accessDenied.classList.toggle('hidden', !denied);
     if (accessDeniedText && denied) accessDeniedText.textContent = '当前账号无权限访问' + departmentFromUrl + '的工作台。';
     var requestedWorkspace = new URLSearchParams(window.location.search).get('workspace');
-    var productLeadHome = !departmentFromUrl && window.PatchworkRoles.productWorkspace(currentProfile) && (currentProfile.role !== 'admin' || requestedWorkspace === 'product');
+    var productLeadHome = !departmentFromUrl && window.PatchworkRoles.productWorkspace(currentProfile) && requestedWorkspace !== 'test' && (currentProfile.role !== 'admin' || requestedWorkspace === 'product');
     if (productLeadServices) productLeadServices.classList.toggle('hidden', !productLeadHome);
     if (denied) {
       if (workspaceHeading) workspaceHeading.classList.add('hidden');

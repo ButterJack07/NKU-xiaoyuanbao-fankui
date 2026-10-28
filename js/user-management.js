@@ -102,7 +102,6 @@
     if (row.role === 'admin') { payload.role = 'admin'; payload.department = row.department; }
     else { payload.department = form.department.value; payload.role = form.role.value; }
     if (payload.is_product_lead && payload.is_product_deputy) { error.textContent = '产品负责人和产品副负责人不能同时指定。'; error.classList.remove('hidden'); return; }
-    if (payload.is_product_deputy && payload.department !== '产品') { error.textContent = '产品副负责人必须属于产品部门。'; error.classList.remove('hidden'); return; }
     error.classList.add('hidden'); button.disabled = true; button.textContent = '保存中…';
     try { var updated = await window.PatchworkAPI.updateProfile(row.id, payload); rows = rows.map(function (item) { return item.id === updated.id ? updated : item; }); render(); closeEditUser(); toast('用户信息已更新。', 'success'); }
     catch (err) { error.textContent = err.message || '保存失败。'; error.classList.remove('hidden'); }

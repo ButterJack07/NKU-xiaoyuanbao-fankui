@@ -22,9 +22,23 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
       ('00000000-0000-0000-0000-000000000003','测试',false,1),
       ('00000000-0000-0000-0000-000000000004','测试',false,2);
   `);
+  // Include the real department-progress trigger: pending reports must stay pending
+  // and approval must initialize dispatch without bypassing its permission guards.
+  await db.exec(`alter table bug_reports add column department_progress jsonb default '{}'::jsonb,
+    add column assignee_id uuid, add column transfer_note text default '';`);
+  // Simulate an existing deployment whose processing functions still require 产品.
+  function legacyProcessing(file) {
+    return fs.readFileSync(path.join(__dirname,'../'+file),'utf8').replace(/product_lead := actor\.is_product_lead/g,"product_lead := actor.department = '产品' and actor.is_product_lead");
+  }
+  await db.exec(legacyProcessing('supabase-product-request-actions.sql'));
+  await db.exec(legacyProcessing('supabase-pending-assignee.sql'));
+  await db.exec(`create trigger bug_reports_department_progress before insert or update on bug_reports
+    for each row execute function sync_bug_department_progress();`);
   const sql = fs.readFileSync(path.join(__dirname,'../supabase-product-deputy.sql'),'utf8');
   await db.exec(sql); await db.exec(sql);
   await db.exec(`
+    update profiles set department='设计' where id='00000000-0000-0000-0000-000000000001';
+    update profiles set department='技术—后端' where id='00000000-0000-0000-0000-000000000002';
     update profiles set is_product_deputy=true where id='00000000-0000-0000-0000-000000000002';
     create trigger source_guard before insert on bug_reports for each row execute function enforce_bug_report_submission_source();
     create trigger review_guard before update on bug_reports for each row execute function enforce_bug_review_stage();
@@ -34,6 +48,7 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   const insert = async (type, source, status) => (await db.query('insert into bug_reports(request_type,submission_source,status) values($1,$2,$3) returning *',[type,source,status])).rows[0];
   await login(2);
   const bug = await insert('bug','product','open');
+  assert.equal((await db.query('select is_product_deputy() as yes')).rows[0].yes,true);
   assert.equal(bug.status,'pending_review_2');
   assert.deepEqual((await db.query('select stage from bug_review_events where bug_id=$1',[bug.id])).rows.map(r=>r.stage),[1]);
   const request = await insert('product_change','product_change','open');
@@ -49,6 +64,7 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   await login(4);
   await db.query("update bug_reports set status='open' where id=$1",[bug.id]);
   await login(1);
+  assert.equal((await db.query('select is_product_lead() as yes')).rows[0].yes,true);
   let reviewed = (await db.query('select * from review_product_request($1,false,$2)',[request.id,'补充说明'])).rows[0];
   assert.equal(reviewed.status,'rejected');
   await login(2);
@@ -60,6 +76,15 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
   const direct = await insert('product_change','product_change','pending_review_1');
   assert.equal(direct.status,'open');
   assert.equal((await db.query('select count(*)::int as n from bug_review_events where bug_id=$1',[direct.id])).rows[0].n,2);
+  assert.equal((await insert('bug','product','open')).status,'open');
+  const progress = (await db.query('select * from update_bug_department_progress($1,$2,$3)',[request.id,'技术—前端',{status:'resolved',note:'跨部门产品负责人处理'}])).rows[0];
+  assert.equal(progress.status,'resolved');
+  const transferred = (await db.query('select * from update_bug_departments($1,$2,$3)',[request.id,['技术—前端','设计'],'跨部门调整'])).rows[0];
+  assert.equal(transferred.assignee_department,'技术—前端,设计');
+  assert.equal(transferred.department_progress['技术—前端'].status,'resolved');
+  await login(2);
+  await assert.rejects(db.query('select * from update_bug_department_progress($1,$2,$3)',[request.id,'技术—前端',{status:'open'}]),/只能处理自己部门/);
+  await login(1);
   await assert.rejects(db.exec("update profiles set is_product_deputy=true where is_product_lead"),/profiles_product_deputy_check/);
   await db.exec(`
     alter table bug_reports enable row level security;
@@ -67,18 +92,29 @@ const { PGlite } = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
     create policy submitter_update on bug_reports for update to authenticated using(submitter_id=auth.uid()) with check(true);
     grant usage on schema public,auth to authenticated;
     grant select on profiles to authenticated;
-    grant select,insert,update on bug_reports to authenticated;
+    grant select,insert,update,delete on bug_reports to authenticated;
     grant usage on sequence product_request_no_seq to authenticated;
     set role authenticated;
   `);
   await login(2);
   const rlsRequest = await insert('product_change','product_change','open');
   assert.equal(rlsRequest.status,'pending_review_1');
+  assert.equal((await db.query('delete from bug_reports where id=$1 returning id',[rlsRequest.id])).rows.length,0);
+  const rejectedRequest = await insert('product_change','product_change','open');
   await login(1);
+  await db.query('select * from review_product_request($1,false,\'请补充\')',[rejectedRequest.id]);
+  assert.equal((await db.query('delete from bug_reports where id=$1 returning id',[rejectedRequest.id])).rows.length,0);
+  await login(2);
+  assert.equal((await db.query('delete from bug_reports where id=$1 returning id',[rejectedRequest.id])).rows.length,1);
+  await login(1);
+  assert.equal((await insert('bug','product','open')).status,'open');
+  const rlsLeadRequest = await insert('product_change','product_change','pending_review_1');
+  assert.equal(rlsLeadRequest.status,'open');
   assert.equal((await db.query("update bug_reports set review_note='负责人可编辑' where id=$1 returning *",[rlsRequest.id])).rows.length,1);
   await db.query('select * from review_product_request($1,true,\'RLS审核\')',[rlsRequest.id]);
   await login(3);
   await assert.rejects(insert('product_change','product_change','open'),/仅产品负责人/);
+  await assert.rejects(insert('bug','product','open'),/仅产品负责人/);
   await db.close();
-  console.log('PASS: deputy submission, automatic stage-one approval, reviewer isolation, lead approval/rejection, resubmission, direct dispatch and migration rerun');
+  console.log('PASS: cross-department lead/deputy, submission, automatic stage-one approval, reviewer isolation, lead approval/rejection, resubmission, direct dispatch, department progress/transfer, RLS and migration rerun');
 })().catch(error => { console.error(error); process.exitCode=1; });

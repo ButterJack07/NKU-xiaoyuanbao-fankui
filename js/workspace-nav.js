@@ -13,6 +13,7 @@
   function canAccessDepartment(profile, target) {
     if (!profile || !target) return false;
     if (profile.role === 'admin') return true;
+    if (target === '产品' && window.PatchworkRoles.productWorkspace(profile)) return true;
     if (isTechLeader(profile) && TECH_DEPARTMENTS.indexOf(target) !== -1) return true;
     return profile.department === target;
   }
@@ -213,7 +214,7 @@
     var version = window.PATCHWORK_CONFIG && window.PATCHWORK_CONFIG.version ? window.PATCHWORK_CONFIG.version : '1.1.2';
     var navProfile = window.PATCHWORK_PROFILE;
     var navProductLead = window.PatchworkRoles.productWorkspace(navProfile);
-    var homeHref = navProductLead && navProfile.role === 'admin' ? 'index.html?workspace=test' : 'index.html';
+    var homeHref = navProductLead ? 'index.html?workspace=test' : 'index.html';
     topbar.innerHTML = '<a class="brand" href="index.html" aria-label="校缘宝内测管理网站首页"><span><strong>校缘宝内测管理网站</strong><small class="brand-version">' + version + '</small></span></a>' +
       '<nav class="topnav" aria-label="主导航"><div class="nav-menu-card">' +
       '<a data-nav="home" class="nav-test-root" href="' + homeHref + '">测试</a>' +
@@ -230,13 +231,13 @@
       var publicPage = ['announcements.html', 'announcement-detail.html', 'data-dashboard.html'].includes(page);
       var productLead = window.PatchworkRoles.productWorkspace(window.PATCHWORK_PROFILE);
       var workspace = new URLSearchParams(window.location.search).get('workspace');
-      var adminTestWorkspace = window.PATCHWORK_PROFILE && window.PATCHWORK_PROFILE.role === 'admin' && workspace === 'test';
+      var adminTestWorkspace = workspace === 'test';
       link.classList.toggle('active', ((!productLead || adminTestWorkspace) && !department && !publicPage && page !== 'user-management.html' && link.dataset.nav === 'home'));
     });
     topbar.querySelectorAll('[data-department]').forEach(function (link) {
       var profile = window.PATCHWORK_PROFILE;
       var workspace = new URLSearchParams(window.location.search).get('workspace');
-      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && window.PatchworkRoles.productWorkspace(profile) && (profile.role !== 'admin' || workspace === 'product');
+      var productLeadHome = link.dataset.department === '产品' && page === 'index.html' && window.PatchworkRoles.productWorkspace(profile) && workspace !== 'test' && (profile.role !== 'admin' || workspace === 'product');
       link.classList.toggle('active', link.dataset.department === department || productLeadHome || (link.dataset.department === '产品' && page === 'index.html' && workspace === 'product'));
     });
     topbar.querySelectorAll('[data-admin-only]').forEach(function (link) {
@@ -327,7 +328,7 @@
     var isProductLead = window.PatchworkRoles.productWorkspace(profile);
     var homeLink = topbar.querySelector('[data-nav="home"]');
     var workspace = new URLSearchParams(window.location.search).get('workspace');
-    if (homeLink && isProductLead && profile.role === 'admin') homeLink.href = 'index.html?workspace=test';
+    if (homeLink && isProductLead) homeLink.href = 'index.html?workspace=test';
     if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html?workspace=product' : 'department-bugs.html?department=产品';
     if (profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
@@ -343,14 +344,14 @@
         if (!isAllowed) link.removeAttribute('href');
       });
       var currentPage = window.location.pathname.split('/').pop() || 'index.html';
-      var isProductUploadPage = currentPage === 'submit-bug.html' && new URLSearchParams(window.location.search).get('source') === 'product' && (profile.department === '产品' || profile.role === 'admin');
+      var isProductUploadPage = currentPage === 'submit-bug.html' && new URLSearchParams(window.location.search).get('source') === 'product' && (profile.department === '产品' || profile.role === 'admin' || productLead);
       var isReviewerEditPage = currentPage === 'submit-bug.html' && Boolean(new URLSearchParams(window.location.search).get('bug')) && Number(profile.review_stage) > 0;
       var isReviewDetail = currentPage === 'bug-detail.html' && Number(profile.review_stage) > 0;
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage || isReviewerEditPage;
       var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html', 'data-dashboard.html', 'product-change-requests.html', 'product-change-detail.html'].includes(currentPage);
       var isProductLeadPage = productLead && ['index.html', 'product-change-requests.html', 'product-change-detail.html', 'submit-product-request.html'].includes(currentPage);
       if (window.PatchworkRoles.productDeputy(profile) && ['bug-reports.html','bug-detail.html'].includes(currentPage) && !currentDepartment) return;
-      if (isPublicWorkspacePage || isReviewDetail || isProductLeadPage) {
+      if (isPublicWorkspacePage || isReviewDetail || isProductLeadPage || isProductUploadPage || (productLead && currentDepartment === '产品')) {
         return;
       } else if (profile.department === '测试' && isDepartmentPage) {
         window.location.replace('index.html');

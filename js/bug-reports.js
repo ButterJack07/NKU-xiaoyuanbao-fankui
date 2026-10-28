@@ -70,7 +70,7 @@
   if (productUploadBug && departmentFromUrl === '产品') {
     window.PATCHWORK_READY.then(function () {
       var profile = window.PATCHWORK_PROFILE;
-      if (!profile || (profile.department !== '产品' && profile.role !== 'admin')) return;
+       if (!window.PatchworkRoles.productWorkspace(profile)) return;
       productUploadBug.classList.remove('hidden');
       productUploadBug.addEventListener('click', function () { window.location.href = 'submit-bug.html?source=product'; });
     });

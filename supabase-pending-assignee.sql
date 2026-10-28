@@ -17,7 +17,7 @@ declare
 begin
   select * into actor from public.profiles where id = auth.uid() and active;
   if actor.id is not null then
-    product_lead := actor.department = '产品' and actor.is_product_lead and new.request_type = 'product_change';
+    product_lead := actor.is_product_lead and new.request_type = 'product_change';
   end if;
   if tg_op = 'UPDATE' then
     previous := old.department_progress;
@@ -102,7 +102,7 @@ begin
   if actor.id is null then raise exception '请先登录有效账号'; end if;
   select * into b from public.bug_reports where id = p_bug_id for update;
   if not found then raise exception '报告不存在'; end if;
-  product_lead := actor.department = '产品' and actor.is_product_lead and b.request_type = 'product_change';
+  product_lead := actor.is_product_lead and b.request_type = 'product_change';
   if p_department is null or not coalesce(p_department = any(string_to_array(b.assignee_department, ',')), false) then raise exception '该部门未分配此报告'; end if;
   if actor.role <> 'admin' and actor.department is distinct from p_department and not product_lead then raise exception '只能处理自己部门的任务'; end if;
   if b.status not in ('open','in_progress','resolved') then raise exception '报告尚未分发'; end if;

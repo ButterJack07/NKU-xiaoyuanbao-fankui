@@ -147,7 +147,7 @@
   async function deleteBug(id) {
     return request('/rest/v1/' + config.tableName + '?id=eq.' + encodeURIComponent(id), {
       method: 'DELETE',
-      headers: headers()
+      headers: headers({ Prefer: 'return=representation' })
     });
   }
 
