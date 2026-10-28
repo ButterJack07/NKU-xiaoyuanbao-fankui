@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.5.1
+1.5.2
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.5.1'
+  version: '1.5.2'
 };
 ```
 
@@ -145,6 +145,17 @@ SUPABASE_ANON_KEY
 不要配置或提交 `SUPABASE_SERVICE_ROLE_KEY`。先在 Supabase 执行 `supabase.sql` 中的 healthcheck 建表部分，再部署 Worker。
 
 ## 本地运行
+
+### 产品副负责人（1.5.2）
+
+在已有审核流程、部门进度和产品需求权限迁移（含 `supabase-pending-assignee.sql`）之后，在 Supabase SQL Editor 执行 `supabase-product-deputy.sql`。
+
+- 超级管理员在“用户管理 → 编辑用户”中指定产品副负责人，与产品负责人在同处设置；副负责人须属于产品部门，不能同时担任产品负责人。
+- 产品副负责人可进入产品工作台、提交缺陷报告和产品修改需求。
+- 副负责人提交缺陷默认通过第一审核，等待第二审核，通过后才进入部门处理。
+- 副负责人提交修改需求须由产品负责人在需求详情中通过或驳回；通过后直接分发，驳回后提交人可修改并重新提交。
+- 产品负责人发布修改需求继续免审直接分发；副负责人不获得产品负责人的跨部门处理权限。
+- 推送静态页面不会自动执行数据库迁移，须单独执行上述 SQL 后刷新页面。
 
 ### 多部门独立处理与数据看板
 

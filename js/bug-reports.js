@@ -7,7 +7,7 @@
   function esc(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function isDistributed(status) { return DISTRIBUTED.indexOf(status) !== -1; }
   function displayRows() { return rows.map(function (bug) { return window.PatchworkAPI.departmentView(bug, departmentFromUrl); }); }
-  function canReview(bug) { var p = window.PATCHWORK_PROFILE; if (!p) return false; if (bug.status === 'pending_review_1') return Number(p.review_stage) === 1; if (bug.status === 'pending_review_2') return Number(p.review_stage) === 2; return false; }
+  function canReview(bug) { var p = window.PATCHWORK_PROFILE; if (!p || bug.request_type === 'product_change') return false; if (bug.status === 'pending_review_1') return Number(p.review_stage) === 1; if (bug.status === 'pending_review_2') return Number(p.review_stage) === 2; return false; }
   function formatDate(value) { return value ? new Date(value).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
   function toast(text, type) { var node = document.getElementById('toast'); node.textContent = text; node.className = 'toast show ' + (type || ''); setTimeout(function () { node.className = 'toast'; }, 3200); }
   function profileFor(id) { return profiles.find(function (profile) { return profile.id === id; }); }
@@ -62,7 +62,7 @@
     }
     document.title = '校缘宝内测管理网站 · ' + departmentFromUrl + '缺陷列表';
   }
-  async function load() { try { var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]); rows = result[0]; profiles = result[1] || []; render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
+  async function load() { try { var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]); rows = result[0]; var profile=window.PATCHWORK_PROFILE; if(!departmentFromUrl&&window.PatchworkRoles.productDeputy(profile))rows=rows.filter(function(b){return b.request_type!=='product_change'&&b.submitter_id===profile.id;}); profiles = result[1] || []; render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
   ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus', 'myBugFilter'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
   var newBugReport = document.getElementById('newBugReport');
   if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = 'submit-bug.html'; });

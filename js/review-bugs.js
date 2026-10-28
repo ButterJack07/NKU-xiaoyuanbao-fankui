@@ -48,7 +48,7 @@
         return;
       }
       var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]);
-      rows = result[0] || [];
+      rows = (result[0] || []).filter(function(bug){return bug.request_type !== 'product_change';});
       profiles = result[1] || [];
       render();
     } catch (error) { toast(error.message || '待审核列表加载失败。', 'error'); }

@@ -1,6 +1,11 @@
 (function () {
   'use strict';
   var rows = [], list = document.getElementById('userList'), pageSize = 5, currentPage = 1;
+  var deputyField = document.createElement('label');
+  deputyField.className = 'field';
+  deputyField.innerHTML = '<span>产品副负责人</span><select name="is_product_deputy"><option value="false">否</option><option value="true">是</option></select>';
+  document.querySelector('#editUserForm [name="is_product_lead"]').closest('label').after(deputyField);
+  document.querySelector('.users-table th:nth-child(5)').textContent = '产品职责';
   function esc(value) { return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function toast(text, type) { var node = document.getElementById('toast'); node.textContent = text; node.className = 'toast show ' + (type || ''); setTimeout(function () { node.className = 'toast'; }, 3500); }
   function roleLabel(row) { var base = row.role === 'admin' ? '超级管理员' : row.role === 'leader' ? '组长' : '普通成员'; if (Number(row.review_stage) === 1) base += ' · 一审'; else if (Number(row.review_stage) === 2) base += ' · 二审'; return base; }
@@ -14,6 +19,7 @@
     var pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
     list.innerHTML = pageRows.map(function (row) { var action = '<button class="user-edit-link" type="button" data-user-id="' + esc(row.id) + '">编辑</button>'; action += '<button class="user-reset-link" type="button" data-reset-user-id="' + esc(row.id) + '">重置密码</button>'; return '<tr><td>' + esc(row.username) + '</td><td><button class="user-name-link" type="button" data-profile-id="' + esc(row.id) + '">' + esc(row.full_name) + '</button></td><td>' + esc(row.department) + '</td><td>' + esc(roleLabel(row)) + '</td><td>' + (row.is_product_lead ? '是' : '否') + '</td><td><span class="user-status ' + (row.active ? 'enabled' : 'disabled') + '">' + (row.active ? '启用' : '停用') + '</span></td><td>' + action + '</td></tr>'; }).join('');
     list.querySelectorAll('.user-edit-link').forEach(function (button) { button.addEventListener('click', function () { openEditUser(button.dataset.userId); }); });
+    Array.from(list.rows).forEach(function (tr, index) { tr.cells[4].textContent = pageRows[index].is_product_lead ? '产品负责人' : pageRows[index].is_product_deputy ? '产品副负责人' : '否'; });
     list.querySelectorAll('.user-reset-link').forEach(function (button) { button.addEventListener('click', function () { openResetPassword(button.dataset.resetUserId); }); });
     list.querySelectorAll('.user-name-link').forEach(function (button) { button.addEventListener('click', function () { openProfileInfo(button.dataset.profileId); }); });
     document.getElementById('userEmpty').classList.toggle('hidden', visible.length !== 0);
@@ -25,7 +31,7 @@
   async function load() {
     await window.PATCHWORK_READY;
     if (!window.PATCHWORK_PROFILE || window.PATCHWORK_PROFILE.role !== 'admin') { window.location.replace('index.html'); return; }
-     var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,created_at').order('created_at', { ascending: true });
+     var result = await window.PATCHWORK_SUPABASE.from('profiles').select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,is_product_deputy,created_at').order('created_at', { ascending: true });
     if (result.error) throw result.error;
     rows = result.data || []; render();
   }
@@ -51,6 +57,7 @@
     form.active.value = String(row.active);
     if (form.review_stage) form.review_stage.value = String(Number(row.review_stage) || 0);
     if (form.is_product_lead) form.is_product_lead.value = String(Boolean(row.is_product_lead));
+    if (form.is_product_deputy) form.is_product_deputy.value = String(Boolean(row.is_product_deputy));
     form.role.disabled = isAdminRow;
     document.getElementById('editUserIdentity').textContent = '账号：' + row.username + '｜' + row.full_name;
     document.getElementById('editUserError').classList.add('hidden');
@@ -91,8 +98,11 @@
     var payload = { active: form.active.value === 'true' };
     payload.review_stage = Number(form.review_stage && form.review_stage.value) || 0;
     payload.is_product_lead = form.is_product_lead && form.is_product_lead.value === 'true';
+    payload.is_product_deputy = form.is_product_deputy && form.is_product_deputy.value === 'true';
     if (row.role === 'admin') { payload.role = 'admin'; payload.department = row.department; }
     else { payload.department = form.department.value; payload.role = form.role.value; }
+    if (payload.is_product_lead && payload.is_product_deputy) { error.textContent = '产品负责人和产品副负责人不能同时指定。'; error.classList.remove('hidden'); return; }
+    if (payload.is_product_deputy && payload.department !== '产品') { error.textContent = '产品副负责人必须属于产品部门。'; error.classList.remove('hidden'); return; }
     error.classList.add('hidden'); button.disabled = true; button.textContent = '保存中…';
     try { var updated = await window.PatchworkAPI.updateProfile(row.id, payload); rows = rows.map(function (item) { return item.id === updated.id ? updated : item; }); render(); closeEditUser(); toast('用户信息已更新。', 'success'); }
     catch (err) { error.textContent = err.message || '保存失败。'; error.classList.remove('hidden'); }

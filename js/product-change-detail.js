@@ -3,13 +3,14 @@
   var id = new URLSearchParams(location.search).get('bug'), bug, members = [], departments = ['技术—前端','技术—后端','设计','产品'], editExistingAttachments = [], editFiles = [];
   var TECH_DEPARTMENTS = ['技术—前端','技术—后端'];
   function isTechLeader(profile) { return Boolean(profile && profile.role === 'leader' && TECH_DEPARTMENTS.indexOf(profile.department) !== -1); }
-  var statusText = { open:'未处理', in_progress:'处理中', resolved:'已完成' };
+  var statusText = { open:'未处理', in_progress:'处理中', resolved:'已完成', pending_review_1:'待产品负责人审核', rejected:'已驳回' };
   function esc(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function toast(message, type) { var n=document.getElementById('toast'); n.textContent=message; n.className='toast show '+(type||''); setTimeout(function(){n.className='toast';},3500); }
   function isProductManager(profile) { return Boolean(profile && (profile.role === 'admin' || (profile.department === '产品' && profile.is_product_lead))); }
   function currentProfile() { return window.PATCHWORK_PROFILE || {}; }
   function requestedDepartment() { return new URLSearchParams(location.search).get('department') || ''; }
   function actionDepartments() {
+    if (!['open','in_progress','resolved'].includes(bug.status)) return [];
     var profile = currentProfile(), all = reportDepartments();
     if (isProductManager(profile)) return all;
     var own = requestedDepartment() || profile.department;
@@ -24,8 +25,8 @@
   function setupBreadcrumb() {
     var profile = window.PATCHWORK_PROFILE || {}, home = document.getElementById('requestHomeLink'), list = document.getElementById('requestListLink');
     if (!home || !list) return;
-    if (isProductManager(profile)) {
-      home.textContent = '产品负责人工作台'; home.href = 'index.html';
+    if (isProductManager(profile) || window.PatchworkRoles.productDeputy(profile)) {
+      home.textContent = window.PatchworkRoles.productDeputy(profile) ? '产品副负责人工作台' : '产品负责人工作台'; home.href = 'index.html';
       list.textContent = '产品修改需求'; list.href = 'product-change-requests.html';
       return;
     }
@@ -69,6 +70,20 @@
   }
   function reportDepartments() { return String(bug.assignee_department||'').split(',').map(function(x){return x.trim();}).filter(Boolean); }
   function overall() { var states=reportDepartments().map(function(d){return window.PatchworkAPI.departmentState(bug,d).status;}); return states.length&&states.every(function(s){return s==='resolved';})?'resolved':states.some(function(s){return s!=='open';})?'in_progress':'open'; }
+  function renderReview() {
+    var panel=document.getElementById('productReviewPanel');
+    if(!panel){panel=document.createElement('section');panel.id='productReviewPanel';panel.className='detail-card';document.querySelector('.bug-detail-grid').prepend(panel);}
+    panel.innerHTML='<h2>产品负责人审核</h2><p>'+esc(statusText[bug.status]||'已分发')+'</p><p>'+esc(bug.review_note||'')+'</p>';
+    if(bug.status==='pending_review_1' && window.PatchworkRoles.productLead(currentProfile()) && bug.submitter_id!==currentProfile().id){
+      panel.insertAdjacentHTML('beforeend','<textarea id="productReviewNote" rows="3" maxlength="1000" placeholder="审核意见"></textarea><div class="detail-actions"><button class="case-action-button" id="approveProductRequest">通过并分发</button><button class="detail-muted-button" id="rejectProductRequest">驳回</button></div>');
+      document.getElementById('approveProductRequest').onclick=function(){reviewRequest(true);};
+      document.getElementById('rejectProductRequest').onclick=function(){reviewRequest(false);};
+    }
+  }
+  async function reviewRequest(approve) {
+    var buttons=document.querySelectorAll('#productReviewPanel button');buttons.forEach(function(b){b.disabled=true;});
+    try{var result=await window.PATCHWORK_SUPABASE.rpc('review_product_request',{p_bug_id:bug.id,p_approve:approve,p_note:document.getElementById('productReviewNote').value.trim()});if(result.error)throw result.error;bug=result.data[0];render();toast(approve?'审核通过，已分发至所选部门。':'需求已驳回。','success');}catch(e){toast(e.message||'审核失败。','error');buttons.forEach(function(b){b.disabled=false;});}
+  }
   function render() {
     setupBreadcrumb();
     document.title='校缘宝 · '+window.PatchworkAPI.reportCode(bug);
@@ -85,10 +100,13 @@
     document.getElementById('requestImpact').textContent=bug.impact_scope||'—';
     document.getElementById('requestDepartments').textContent=reportDepartments().join('、')||'—';
     document.getElementById('requestAttachments').innerHTML=window.PatchworkAttachments?window.PatchworkAttachments.render(bug.attachment_urls||[],{code:window.PatchworkAPI.reportCode(bug)}):((bug.attachment_urls||[]).length?bug.attachment_urls.map(function(url,i){return '<a class="detail-attachment-download" href="'+esc(url)+'" target="_blank" rel="noopener">查看附件 '+(i+1)+'</a>';}).join(' '):'无附件');
-    var state=overall();
+    var state=['pending_review_1','rejected'].includes(bug.status)?bug.status:overall();
     document.getElementById('requestOverallStatus').innerHTML='<span class="overview-status overview-'+state+'">'+statusText[state]+'</span>';
     var profile=currentProfile();
-    document.getElementById('requestEditAction').classList.toggle('hidden', !isProductManager(profile));
+    var ownRejected = bug.submitter_id === profile.id && bug.status === 'rejected';
+    var canEdit = ['pending_review_1','rejected'].includes(bug.status) ? window.PatchworkRoles.productLead(profile) || ownRejected : isProductManager(profile);
+    document.getElementById('requestEditAction').classList.toggle('hidden', !canEdit);
+    renderReview();
     var departmentSelect=document.getElementById('requestActionDepartment'), available=actionDepartments(), previous=departmentSelect.value, requested=requestedDepartment();
     var target=available.indexOf(previous)!==-1?previous:(available.indexOf(requested)!==-1?requested:available[0]||'');
     departmentSelect.innerHTML=available.map(function(dep){return '<option value="'+esc(dep)+'">'+esc(dep)+'</option>';}).join('');
@@ -107,7 +125,7 @@
     document.getElementById('requestNotice').textContent=!target?'当前账号暂无可操作的处理部门。':permissions.manager?'可切换处理部门并更新其备注、跟进人、状态和处理部门；各部门状态互不影响。':permissions.assign?'当前处理部门：'+target+'。可更新本部门备注、跟进人、状态和处理部门。':permissions.operate?'当前处理部门：'+target+'。可填写本部门备注并更新状态。':canPending?'当前处理部门：'+target+'。可将本部门跟进人设为待定。':'当前处理部门：'+target+'。仅对应部门成员可处理，产品负责人可更新全部部门。';
     document.getElementById('requestDepartmentRows').innerHTML=reportDepartments().map(function(dep){
       var item=window.PatchworkAPI.departmentState(bug,dep), label=statusText[item.status]||item.status||'未处理';
-      var canComment=isProductManager(profile)||profile.department===dep;
+      var canComment=['open','in_progress','resolved'].includes(bug.status)&&(isProductManager(profile)||profile.department===dep);
       var noteEditor=canComment?'<form class="request-note-form" data-note-form="'+esc(dep)+'"><label><span>添加跟进备注</span><textarea name="note" rows="2" maxlength="3000" placeholder="补充本部门处理进展"></textarea></label><button class="case-action-button" type="submit">添加备注</button><p class="request-note-feedback hidden" aria-live="polite"></p></form>':'';
       return '<article class="request-department-card"><header><div class="request-department-identity"><span class="request-department-mark">'+esc(dep.slice(-2))+'</span><div><strong>'+esc(dep)+'</strong><small>处理部门</small></div></div><span class="overview-status overview-'+esc(item.status)+'">'+esc(label)+'</span></header><div class="request-department-meta"><div><span>跟进人</span><strong>'+esc(item.assignee||'待定')+'</strong></div><div><span>处理状态</span><strong>'+esc(label)+'</strong></div></div><div class="request-department-note"><span>跟进备注</span><p>'+esc(item.note||'暂无备注')+'</p></div>'+noteEditor+'</article>';
     }).join('');
@@ -286,8 +304,8 @@
   }
   function openEditModal(){var form=document.getElementById('editProductRequestForm');['title','module','change_reason','before_logic','after_logic','exception_handling','impact_scope','desired_date'].forEach(function(name){form.elements[name].value=bug[name]||'';});editExistingAttachments=(bug.attachment_urls||[]).slice();editFiles=[];var fileInput=document.getElementById('editRequestAttachments');if(fileInput)fileInput.value='';renderEditAttachmentFiles();document.getElementById('editRequestCode').textContent=window.PatchworkAPI.reportCode(bug)+'｜'+(bug.title||'');document.getElementById('editProductRequestError').classList.add('hidden');document.getElementById('editProductRequestModal').classList.remove('hidden');}
   function closeEditModal(){document.getElementById('editProductRequestModal').classList.add('hidden');}
-  async function saveEdit(event){event.preventDefault();var form=event.currentTarget,button=document.getElementById('saveProductRequestEdit'),error=document.getElementById('editProductRequestError');var patch={};['title','module','change_reason','before_logic','after_logic','exception_handling','impact_scope'].forEach(function(name){patch[name]=form.elements[name].value.trim();});patch.desired_date=form.elements.desired_date.value;patch.description=patch.change_reason;patch.repro_steps=patch.before_logic;patch.expected_result=patch.after_logic;patch.actual_result=patch.exception_handling;patch.updated_at=new Date().toISOString();button.disabled=true;button.textContent='保存中…';error.classList.add('hidden');try{var attachmentUrls=editExistingAttachments.slice();for(var i=0;i<editFiles.length;i+=1)attachmentUrls.push(await window.PatchworkAPI.uploadFile(editFiles[i]));patch.attachment_urls=attachmentUrls;var result=await window.PatchworkAPI.updateBug(bug.id,patch);if(!result||!result[0])throw new Error('需求未保存');bug=result[0];editFiles=[];closeEditModal();render();toast('产品修改需求内容已更新。','success');}catch(e){error.textContent=e.message||'需求修改失败。';error.classList.remove('hidden');}finally{button.disabled=false;button.textContent='保存修改';}}
-  async function load(){try{await window.PATCHWORK_READY;var results=await Promise.all([window.PatchworkAPI.listBugs(),window.PatchworkAPI.listProfiles().catch(function(){return [];})]);var result=results[0];members=results[1]||[];bug=(result||[]).find(function(item){return item.id===id&&item.request_type==='product_change';});if(!bug)throw new Error('找不到该产品修改需求。');var profile=window.PATCHWORK_PROFILE||{},techLeader=isTechLeader(profile)&&reportDepartments().some(function(dep){return TECH_DEPARTMENTS.indexOf(dep)!==-1;});if(!techLeader){if(profile.role!=='admin'&&profile.department!=='产品'&&reportDepartments().indexOf(profile.department)===-1)throw new Error('当前账号没有查看该需求的权限。');if(profile.role!=='admin'&&profile.department==='产品'&&!profile.is_product_lead&&reportDepartments().indexOf(profile.department)===-1)throw new Error('仅产品负责人可查看此需求。');}render();}catch(e){toast(e.message||'产品修改需求加载失败。','error');}}
+  async function saveEdit(event){event.preventDefault();var form=event.currentTarget,button=document.getElementById('saveProductRequestEdit'),error=document.getElementById('editProductRequestError');var patch={};if(bug.status==='rejected'&&bug.submitter_id===currentProfile().id){patch.status='pending_review_1';patch.review_note='';}['title','module','change_reason','before_logic','after_logic','exception_handling','impact_scope'].forEach(function(name){patch[name]=form.elements[name].value.trim();});patch.desired_date=form.elements.desired_date.value;patch.description=patch.change_reason;patch.repro_steps=patch.before_logic;patch.expected_result=patch.after_logic;patch.actual_result=patch.exception_handling;patch.updated_at=new Date().toISOString();button.disabled=true;button.textContent='保存中…';error.classList.add('hidden');try{var attachmentUrls=editExistingAttachments.slice();for(var i=0;i<editFiles.length;i+=1)attachmentUrls.push(await window.PatchworkAPI.uploadFile(editFiles[i]));patch.attachment_urls=attachmentUrls;var result=await window.PatchworkAPI.updateBug(bug.id,patch);if(!result||!result[0])throw new Error('需求未保存');bug=result[0];editFiles=[];closeEditModal();render();toast(patch.status?'已重新提交产品负责人审核。':'产品修改需求内容已更新。','success');}catch(e){error.textContent=e.message||'需求修改失败。';error.classList.remove('hidden');}finally{button.disabled=false;button.textContent='保存修改';}}
+  async function load(){try{await window.PATCHWORK_READY;var results=await Promise.all([window.PatchworkAPI.listBugs(),window.PatchworkAPI.listProfiles().catch(function(){return [];})]);var result=results[0];members=results[1]||[];bug=(result||[]).find(function(item){return item.id===id&&item.request_type==='product_change';});if(!bug)throw new Error('找不到该产品修改需求。');var profile=currentProfile();if(profile.role!=='admin'&&!window.PatchworkRoles.productWorkspace(profile)&&reportDepartments().indexOf(profile.department)===-1&&!isTechLeader(profile))throw new Error('当前账号没有查看该需求的权限。');render();}catch(e){toast(e.message||'产品修改需求加载失败。','error');}}
   document.getElementById('editProductRequest').addEventListener('click',openEditModal);document.getElementById('closeEditProductRequest').addEventListener('click',closeEditModal);document.getElementById('cancelEditProductRequest').addEventListener('click',closeEditModal);document.getElementById('editProductRequestModal').addEventListener('click',function(event){if(event.target===event.currentTarget)closeEditModal();});document.getElementById('editProductRequestForm').addEventListener('submit',saveEdit);
   var editAttachmentInput=document.getElementById('editRequestAttachments');if(editAttachmentInput)editAttachmentInput.addEventListener('change',function(){acceptEditFiles(editAttachmentInput.files);editAttachmentInput.value='';});
   var editDropzone=document.getElementById('editRequestDropzone');if(editDropzone){['dragenter','dragover'].forEach(function(name){editDropzone.addEventListener(name,function(event){event.preventDefault();editDropzone.classList.add('dragging');});});['dragleave','drop'].forEach(function(name){editDropzone.addEventListener(name,function(event){event.preventDefault();editDropzone.classList.remove('dragging');});});editDropzone.addEventListener('drop',function(event){acceptEditFiles(event.dataTransfer.files);});}

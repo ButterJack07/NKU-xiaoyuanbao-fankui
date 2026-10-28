@@ -11,7 +11,7 @@
   }
 
   function cacheProfile(profile) {
-    if (profile) localStorage.setItem(profileStorageKey, JSON.stringify({ id: profile.id, username: profile.username, full_name: profile.full_name, employee_no: profile.employee_no, department: profile.department, role: profile.role, active: profile.active, review_stage: profile.review_stage, is_product_lead: profile.is_product_lead }));
+    if (profile) localStorage.setItem(profileStorageKey, JSON.stringify({ id: profile.id, username: profile.username, full_name: profile.full_name, employee_no: profile.employee_no, department: profile.department, role: profile.role, active: profile.active, review_stage: profile.review_stage, is_product_lead: profile.is_product_lead, is_product_deputy: profile.is_product_deputy }));
     else localStorage.removeItem(profileStorageKey);
   }
 
@@ -28,7 +28,8 @@
   async function verifyProfile(session) {
     if (!session) return null;
     var baseFields = 'id,username,full_name,employee_no,department,role,active,qq,wechat,phone,contact_time,contact_schedule';
-    var result = await client.from('profiles').select(baseFields + ',review_stage,is_product_lead').eq('id', session.user.id).maybeSingle();
+    var result = await client.from('profiles').select(baseFields + ',review_stage,is_product_lead,is_product_deputy').eq('id', session.user.id).maybeSingle();
+    if (result.error && /is_product_deputy/i.test(result.error.message || '')) result = await client.from('profiles').select(baseFields + ',review_stage,is_product_lead').eq('id', session.user.id).maybeSingle();
     if (result.error && /review_stage|is_product_lead/i.test(result.error.message || '')) {
       result = await client.from('profiles').select(baseFields + ',review_stage').eq('id', session.user.id).maybeSingle();
       if (result.error && /review_stage/i.test(result.error.message || '')) result = await client.from('profiles').select(baseFields).eq('id', session.user.id).maybeSingle();

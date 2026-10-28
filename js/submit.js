@@ -14,6 +14,7 @@
   var editBugId = new URLSearchParams(window.location.search).get('bug');
   var productUploadMode = new URLSearchParams(window.location.search).get('source') === 'product' && !editBugId;
   var productUploadReady = Promise.resolve();
+  function isDeputy() { return window.PatchworkRoles.productDeputy(window.PATCHWORK_PROFILE); }
 
   if (!form || !fileInput || !fileList || !submitButton) return;
   var reporterField = document.getElementById('reporterField');
@@ -53,6 +54,12 @@
       if (breadcrumb) breadcrumb.innerHTML = '<a href="department-bugs.html?department=%E4%BA%A7%E5%93%81">产品</a><b>/</b><strong>上传缺陷报告</strong>';
       document.getElementById('submitButton').querySelector('span').textContent = '提交并直接分发';
       document.title = '校缘宝内测管理网站 · 产品端上传缺陷报告';
+      if (isDeputy()) {
+        document.getElementById('bugSubmitDescription').textContent = '产品副负责人提交的缺陷自动通过第一审核，进入第二审核，通过后分发。';
+        document.querySelector('.bug-submit-note').textContent = '自动通过第一审核，等待第二审核。';
+        submitButton.querySelector('span').textContent = '提交至第二审核';
+        document.querySelector('.workspace-breadcrumb').innerHTML = '<a href="index.html">产品副负责人工作台</a><b>/</b><a href="bug-reports.html">我提交的缺陷</a><b>/</b><strong>发布产品缺陷</strong>';
+      }
     } catch (error) {
       showToast(error.message || '无法启用产品端上传。', 'error');
       submitButton.disabled = true;
@@ -212,7 +219,7 @@
       if (!departments.length) throw new Error('请至少选择一个归属部门。');
       data.assignee_department = departments.join(',');
       data.attachment_urls = attachmentUrls;
-      data.status = productUploadMode ? 'open' : 'pending_review_1';
+      data.status = isDeputy() ? 'pending_review_2' : productUploadMode ? 'open' : 'pending_review_1';
       data.submission_source = productUploadMode ? 'product' : 'test';
       var session = (await window.PATCHWORK_AUTH.getSession()).data.session;
       data.submitter_id = session.user.id;
@@ -229,7 +236,7 @@
           importance: data.importance,
           assignee_department: data.assignee_department,
           attachment_urls: data.attachment_urls,
-          status: editingAsReviewer ? editingBug.status : 'pending_review_1',
+          status: editingAsReviewer ? editingBug.status : isDeputy() ? 'pending_review_2' : 'pending_review_1',
           review_note: editingAsReviewer ? editingBug.review_note : '',
           updated_at: new Date().toISOString()
         });
@@ -243,7 +250,7 @@
         var created = await window.PatchworkAPI.createBug(data);
         bug = created && created[0];
         document.getElementById('successTitle').textContent = '缺陷报告已提交';
-        if (productUploadMode) {
+        if (productUploadMode && !isDeputy()) {
           var productListLink = document.querySelector('#successModal a[href="bug-reports.html"]');
           if (productListLink) productListLink.href = 'department-bugs.html?department=' + encodeURIComponent(departments[0]);
           if (productListLink) productListLink.textContent = '查看所选部门缺陷列表';
@@ -253,11 +260,12 @@
           : '问题编号 <strong id="successCode">' + formatBugCode(bug) + '</strong>，已进入审核流程，等待第一审核。';
       }
       successModal.classList.remove('hidden');
+      if (isDeputy() && !editingAsReviewer) document.getElementById('successMessage').textContent = '问题编号 ' + formatBugCode(bug) + '，已自动通过第一审核，等待第二审核。';
     } catch (error) {
       showToast(error.message || '提交失败，请稍后重试。', 'error');
     } finally {
       submitButton.disabled = false;
-      submitButton.querySelector('span').textContent = editingBug ? (editingAsReviewer ? '保存审核修改' : '重新提交缺陷报告') : productUploadMode ? '提交并直接分发' : '提交缺陷报告';
+      submitButton.querySelector('span').textContent = editingBug ? (editingAsReviewer ? '保存审核修改' : '重新提交缺陷报告') : isDeputy() ? '提交至第二审核' : productUploadMode ? '提交并直接分发' : '提交缺陷报告';
     }
   });
 

@@ -203,8 +203,9 @@
   async function listProfiles() {
     var baseFields = 'id,username,full_name,employee_no,department,role,active,qq,wechat,phone,contact_time';
     try {
-      return await request('/rest/v1/profiles?select=' + baseFields + ',review_stage,is_product_lead&active=eq.true', { method: 'GET', headers: headers() });
+      return await request('/rest/v1/profiles?select=' + baseFields + ',review_stage,is_product_lead,is_product_deputy&active=eq.true', { method: 'GET', headers: headers() });
     } catch (error) {
+      if (/is_product_deputy/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + ',review_stage,is_product_lead&active=eq.true', { method: 'GET', headers: headers() });
       if (/is_product_lead/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + ',review_stage&active=eq.true', { method: 'GET', headers: headers() });
       if (/review_stage/i.test(error.message || '')) return request('/rest/v1/profiles?select=' + baseFields + '&active=eq.true', { method: 'GET', headers: headers() });
       throw error;
@@ -263,7 +264,7 @@
   }
 
   async function updateProfile(id, patch) {
-    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,created_at').single();
+    var result = await window.PATCHWORK_SUPABASE.from('profiles').update(patch).eq('id', id).select('id,username,full_name,employee_no,department,role,active,review_stage,is_product_lead,is_product_deputy,created_at').single();
     if (result.error) throw result.error;
     return result.data;
   }
