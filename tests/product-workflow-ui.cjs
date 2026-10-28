@@ -48,8 +48,24 @@ function context(page,profile,search,api) {
     const ctx=context('department-bugs.html',profile,'?department=产品',{listBugs:async()=>[],listProfiles:async()=>[]});
     vm.runInNewContext(read('js/bug-reports.js'),ctx);await flush();
     assert.equal(!ctx.document.getElementById('productUploadBug').classList.contains('hidden'),visible);
+    assert.equal(Boolean(ctx.document.getElementById('productSubmittedBugs')),visible);
+    if(visible){ctx.document.getElementById('productSubmittedBugs').onclick();assert.equal(ctx.location.href,'bug-reports.html?source=product');}
   }
+  const submittedBugs=[
+    {id:'pending',title:'产品待二审',submission_source:'product',status:'pending_review_2',submitter_id:'another',assignee_department:'设计'},
+    {id:'rejected',title:'产品已驳回',submission_source:'product',status:'rejected',assignee_department:'技术—后端'},
+    {id:'test',title:'测试上传',submission_source:'test',status:'open',assignee_department:'产品'},
+    {id:'request',title:'修改需求',request_type:'product_change',submission_source:'product_change',status:'open',assignee_department:'产品'}
+  ];
+  const submitted=context('bug-reports.html',deputy,'?source=product',{listBugs:async()=>submittedBugs,listProfiles:async()=>[],departmentView:b=>b,reportCode:b=>b.id});
+  vm.runInNewContext(read('js/bug-reports.js'),submitted);await flush();
+  const table=submitted.document.getElementById('bugReportList').innerHTML;
+  assert.match(table,/产品待二审/);assert.match(table,/产品已驳回/);assert.doesNotMatch(table,/测试上传|修改需求/);
+  const dashboard=context('data-dashboard.html',deputy,'',{listBugs:async()=>[{...bug,status:'open'}],departmentState:()=>({status:'open'}),reportCode:()=> 'PRO-0001'});
+  vm.runInNewContext(read('js/data-dashboard.js'),dashboard);await flush();
+  assert.match(dashboard.document.getElementById('overviewRows').innerHTML,/<small>产品<\/small>/);
+  assert.doesNotMatch(dashboard.document.getElementById('overviewRows').innerHTML,/产品修改需求/);
   const home=parseHTML(read('index.html')).document;
   assert.equal(home.querySelector('#productLeadServices a[href="submit-bug.html?source=product"]'),null);
-  console.log('PASS: rejected request edit/resubmit/delete, product submission button role visibility, single list entry');
+  console.log('PASS: rejected request operations, product list entry and source filtering, dashboard short label');
 })().catch(error=>{console.error(error);process.exitCode=1;});

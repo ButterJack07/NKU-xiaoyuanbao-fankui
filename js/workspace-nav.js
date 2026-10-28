@@ -350,6 +350,7 @@
       var isDepartmentPage = currentPage === 'department-bugs.html' || (currentPage === 'bug-detail.html' && Boolean(currentDepartment)) || isProductUploadPage || isReviewerEditPage;
       var isPublicWorkspacePage = ['announcements.html', 'announcement-detail.html', 'review-bugs.html', 'data-dashboard.html', 'product-change-requests.html', 'product-change-detail.html'].includes(currentPage);
       var isProductLeadPage = productLead && ['index.html', 'product-change-requests.html', 'product-change-detail.html', 'submit-product-request.html'].includes(currentPage);
+      if (productLead && ['bug-reports.html','bug-detail.html'].includes(currentPage) && new URLSearchParams(window.location.search).get('source') === 'product') return;
       if (window.PatchworkRoles.productDeputy(profile) && ['bug-reports.html','bug-detail.html'].includes(currentPage) && !currentDepartment) return;
       if (isPublicWorkspacePage || isReviewDetail || isProductLeadPage || isProductUploadPage || (productLead && currentDepartment === '产品')) {
         return;

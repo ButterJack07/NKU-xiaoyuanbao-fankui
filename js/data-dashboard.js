@@ -24,7 +24,7 @@
     var query = document.getElementById('overviewSearch').value.trim().toLowerCase(), selected = document.getElementById('overviewStatus').value;
     var visible = rows.filter(function (bug) { return (selected === 'all' || overall(bug) === selected) && (!query || (window.PatchworkAPI.reportCode(bug) + ' ' + bug.title).toLowerCase().includes(query)); });
     document.getElementById('overviewRows').innerHTML = visible.map(function (bug) {
-      return '<tr><td>' + esc(window.PatchworkAPI.reportCode(bug)) + '</td><td class="case-file-name" title="' + esc(bug.title) + '">' + (bug.request_type === 'product_change' ? '<small>产品修改需求</small> ' : '') + esc(bug.title) + '</td><td>' + pill(overall(bug)) + '</td>' + departments.map(function (dep) {
+      return '<tr><td>' + esc(window.PatchworkAPI.reportCode(bug)) + '</td><td class="case-file-name" title="' + esc(bug.title) + '">' + (bug.request_type === 'product_change' ? '<small>产品</small> ' : '') + esc(bug.title) + '</td><td>' + pill(overall(bug)) + '</td>' + departments.map(function (dep) {
         if (!assigned(bug).includes(dep)) return '<td class="overview-unassigned">未分配</td>';
         return '<td>' + pill(overall(bug) === 'undistributed' ? 'undistributed' : window.PatchworkAPI.departmentState(bug, dep).status) + '</td>';
       }).join('') + '</tr>';

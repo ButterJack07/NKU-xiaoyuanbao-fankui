@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.6
+1.6.1
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.6'
+  version: '1.6.1'
 };
 ```
 
@@ -145,6 +145,11 @@ SUPABASE_ANON_KEY
 不要配置或提交 `SUPABASE_SERVICE_ROLE_KEY`。先在 Supabase 执行 `supabase.sql` 中的 healthcheck 建表部分，再部署 Worker。
 
 ## 本地运行
+
+### 1.6.1 更新
+
+- 产品缺陷列表中，在上传按钮右侧增加“查看本部门上传的缺陷”，展示全部产品端上传的缺陷（含兼任产品身份的成员提交的报告），包含待审核、已打回和已分发状态，不受接收部门限制。
+- 数据看板中的产品修改需求标签简写为“产品”。本次无需新增数据库迁移。
 
 ### 产品负责人和副负责人（1.6）
 

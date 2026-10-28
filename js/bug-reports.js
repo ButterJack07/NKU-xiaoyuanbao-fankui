@@ -2,6 +2,7 @@
   'use strict';
   var rows = [], profiles = [], list = document.getElementById('bugReportList'), departmentFromUrl = new URLSearchParams(window.location.search).get('department'), isDepartmentPage = document.body.classList.contains('department-bugs-page');
   var DISTRIBUTED = ['open', 'in_progress', 'resolved'];
+  var productSubmittedView = new URLSearchParams(window.location.search).get('source') === 'product' && !departmentFromUrl;
   var STATUS_TEXT = { pending_review_1: '待一审', pending_review_2: '待二审', rejected: '已打回', postponed: '已暂缓', open: '待处理', in_progress: '处理中', resolved: '已解决' };
   function bugDepartments(bug) { return String(bug.assignee_department || '').split(',').map(function (item) { return item.trim(); }).filter(Boolean); }
   function esc(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -62,23 +63,30 @@
     }
     document.title = '校缘宝内测管理网站 · ' + departmentFromUrl + '缺陷列表';
   }
-  async function load() { try { var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]); rows = result[0]; var profile=window.PATCHWORK_PROFILE; if(!departmentFromUrl&&window.PatchworkRoles.productDeputy(profile))rows=rows.filter(function(b){return b.request_type!=='product_change'&&b.submitter_id===profile.id;}); profiles = result[1] || []; render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
+  async function load() { try { var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]); rows = result[0]; var profile=window.PATCHWORK_PROFILE; if(productSubmittedView){if(!window.PatchworkRoles.productWorkspace(profile)){window.location.replace('index.html');return;}rows=rows.filter(function(b){return b.request_type!=='product_change'&&b.submission_source==='product';});document.getElementById('bugReportTitle').textContent='产品端上传的缺陷报告';document.getElementById('bugReportDescription').textContent='查看产品端所有成员上传的缺陷，包含待审核、已打回和已分发报告，不受接收部门限制。';document.getElementById('bugReportBreadcrumb').textContent='产品端上传的缺陷报告';document.querySelector('.cases-breadcrumb a').textContent='产品工作台';document.title='校缘宝 · 产品端上传的缺陷报告';}else if(!departmentFromUrl&&window.PatchworkRoles.productDeputy(profile))rows=rows.filter(function(b){return b.request_type!=='product_change'&&b.submitter_id===profile.id;}); profiles = result[1] || []; render(); } catch (error) { toast(error.message || '缺陷列表加载失败。', 'error'); } }
   ['bugReportSearch', 'bugReportDepartment', 'bugReportStatus', 'myBugFilter'].forEach(function (id) { var node = document.getElementById(id); node.addEventListener('input', render); node.addEventListener('change', render); });
   var newBugReport = document.getElementById('newBugReport');
-  if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = 'submit-bug.html'; });
+  if (newBugReport) newBugReport.addEventListener('click', function () { window.location.href = productSubmittedView ? 'submit-bug.html?source=product' : 'submit-bug.html'; });
   var productUploadBug = document.getElementById('productUploadBug');
   if (productUploadBug && departmentFromUrl === '产品') {
     window.PATCHWORK_READY.then(function () {
       var profile = window.PATCHWORK_PROFILE;
        if (!window.PatchworkRoles.productWorkspace(profile)) return;
-      productUploadBug.classList.remove('hidden');
+       productUploadBug.classList.remove('hidden');
+       var submittedButton = document.createElement('button');
+       submittedButton.id = 'productSubmittedBugs';
+       submittedButton.type = 'button';
+       submittedButton.className = 'case-action-button';
+       submittedButton.textContent = '查看本部门上传的缺陷';
+       submittedButton.onclick = function () { window.location.href = 'bug-reports.html?source=product'; };
+       productUploadBug.after(submittedButton);
       productUploadBug.addEventListener('click', function () { window.location.href = 'submit-bug.html?source=product'; });
     });
   }
   document.getElementById('exportBugReports').addEventListener('click', exportReports);
-  list.addEventListener('click', function (event) { var person = event.target.closest('[data-person-id]'); if (person) { event.stopPropagation(); openContactModal(person.dataset.personId, person.textContent, person.dataset.personType); return; } var button = event.target.closest('[data-bug-id]'); if (!button) return; var page = button.dataset.requestType === 'product_change' ? 'product-change-detail.html' : 'bug-detail.html'; window.location.href = page + '?bug=' + encodeURIComponent(button.dataset.bugId) + (departmentFromUrl ? '&department=' + encodeURIComponent(departmentFromUrl) : ''); });
+  list.addEventListener('click', function (event) { var person = event.target.closest('[data-person-id]'); if (person) { event.stopPropagation(); openContactModal(person.dataset.personId, person.textContent, person.dataset.personType); return; } var button = event.target.closest('[data-bug-id]'); if (!button) return; var page = button.dataset.requestType === 'product_change' ? 'product-change-detail.html' : 'bug-detail.html'; window.location.href = page + '?bug=' + encodeURIComponent(button.dataset.bugId) + (departmentFromUrl ? '&department=' + encodeURIComponent(departmentFromUrl) : productSubmittedView ? '&source=product' : ''); });
   if (departmentFromUrl && newBugReport) newBugReport.classList.add('hidden');
-  if (!departmentFromUrl && !isDepartmentPage) document.getElementById('exportBugReports').classList.add('hidden');
+  if (!departmentFromUrl && !isDepartmentPage && !productSubmittedView) document.getElementById('exportBugReports').classList.add('hidden');
   setupDepartmentView();
   window.PATCHWORK_READY.then(load).catch(function (error) { toast(error.message, 'error'); });
 })();

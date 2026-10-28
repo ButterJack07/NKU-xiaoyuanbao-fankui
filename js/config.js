@@ -8,7 +8,7 @@
     storageBucket: 'bug-attachments',
     testCaseStorageBucket: 'test-case-files',
     authEmailDomain: 'team.xiaoyuanbao.internal',
-    version: '1.6'
+    version: '1.6.1'
   };
   window.PatchworkRoles = {
     productLead: function (p) { return Boolean(p && p.active !== false && p.is_product_lead); },
