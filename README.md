@@ -11,7 +11,7 @@
 当前站点版本标识为：
 
 ```text
-1.6.1
+1.7.0
 ```
 
 ## 核心功能
@@ -82,7 +82,7 @@ window.PATCHWORK_CONFIG = {
   storageBucket: 'bug-attachments',
   testCaseStorageBucket: 'test-case-files',
   authEmailDomain: 'team.xiaoyuanbao.internal',
-  version: '1.6.1'
+  version: '1.7.0'
 };
 ```
 
@@ -145,6 +145,13 @@ SUPABASE_ANON_KEY
 不要配置或提交 `SUPABASE_SERVICE_ROLE_KEY`。先在 Supabase 执行 `supabase.sql` 中的 healthcheck 建表部分，再部署 Worker。
 
 ## 本地运行
+
+### 1.7.0：任务清单与页面加载
+
+- 顶部“信息”左侧的“任务”展示分配给本人以及本部门尚未指定跟进人的工作；保留已完成条目，按对应处理部门的状态自动勾选完成。
+- 在详情中完成或重新打开任务后，任务清单同步更新；重新打开任务弹窗、返回页面、切回窗口或弹窗每30秒刷新时也会读取最新状态。
+- 业务页面由 `js/page-bootstrap.js` 非阻塞初始化，外部登录组件超时后尝试备用 CDN；加载或登录验证失败提供重载提示。权限跳转在登录资料验证后执行，避免使用过期缓存误跳转。
+- 上述功能沿用现有数据库，无需新增 SQL。
 
 ### 1.6.1 更新
 

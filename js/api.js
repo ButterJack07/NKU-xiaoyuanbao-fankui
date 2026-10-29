@@ -41,7 +41,9 @@
 
     if (response.status === 204) return null;
     var text = await response.text();
-    return text ? JSON.parse(text) : null;
+    var result = text ? JSON.parse(text) : null;
+    if (options && options.method && options.method !== 'GET' && window.dispatchEvent && window.Event) window.dispatchEvent(new window.Event('patchwork:reports-changed'));
+    return result;
   }
 
   function cleanFileName(name) {

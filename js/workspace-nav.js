@@ -23,6 +23,69 @@
   var inboxProfileId = '';
   var inboxReadMap = {};
   var inboxLoading = false;
+  var taskItems = [], tasksLoading = null;
+
+  function collectTasks(bugs, profile) {
+    var items = [];
+    if (!profile) return items;
+    (bugs || []).forEach(function (bug) {
+      if (!['open','in_progress','resolved'].includes(bug.status)) return;
+      String(bug.assignee_department || '').split(',').filter(Boolean).forEach(function (dep) {
+        var state = window.PatchworkAPI.departmentState(bug, dep);
+        var assigned = state.assignee_id === profile.id;
+        var pending = !state.assignee_id && dep === profile.department;
+        if (!assigned && !pending) return;
+        items.push({ id: bug.id + ':' + dep, code: window.PatchworkAPI.reportCode(bug), title: bug.title || '未命名报告', department: dep, pending: pending, done: state.status === 'resolved', status: state.status, time: state.updated_at || bug.updated_at || bug.created_at, href: (bug.request_type === 'product_change' ? 'product-change-detail.html?bug=' : 'bug-detail.html?bug=') + encodeURIComponent(bug.id) + '&department=' + encodeURIComponent(dep) });
+      });
+    });
+    return items.sort(function (a,b) { return Number(a.done)-Number(b.done) || new Date(b.time || 0)-new Date(a.time || 0); });
+  }
+
+  function renderTasks() {
+    var badge = document.getElementById('tasksBadge'), list = document.getElementById('tasksList');
+    var count = taskItems.filter(function (item) { return !item.done; }).length;
+    if (badge) { badge.textContent = count > 99 ? '99+' : String(count); badge.classList.toggle('hidden', !count); }
+    if (!list) return;
+    list.innerHTML = taskItems.length ? taskItems.map(function (item) {
+      return '<article class="inbox-item task-item' + (item.done ? ' task-done' : '') + '"><input type="checkbox" disabled' + (item.done ? ' checked' : '') + ' aria-label="' + (item.done ? '已完成' : '未完成') + '"><a class="inbox-item-main" href="' + inboxEscape(item.href) + '"><div class="inbox-item-head"><strong>' + inboxEscape(item.code) + '</strong><span>' + inboxEscape(item.department) + '</span></div><h3>' + inboxEscape(item.title) + '</h3><p class="inbox-item-meta">' + (item.done ? '已完成' : item.status === 'in_progress' ? '处理中' : '待处理') + (item.pending ? ' · 本部门待指定跟进人' : ' · 已分配给我') + '</p></a></article>';
+    }).join('') : '<div class="inbox-empty">暂无分配给你的工作</div>';
+  }
+
+  function ensureTasksModal() {
+    if (document.getElementById('tasksModal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'tasksModal'; modal.className = 'modal-backdrop hidden';
+    modal.innerHTML = '<section class="user-modal inbox-modal" role="dialog" aria-modal="true" aria-labelledby="tasksTitle"><div class="developer-modal-header"><div><h2 id="tasksTitle">我的任务</h2><p class="user-modal-help">分配给我及本部门待指定的工作；完成状态按对应部门处理状态自动勾选，无需手动打勾。</p></div><button id="closeTasks" class="icon-button" type="button" aria-label="关闭任务">×</button></div><div id="tasksList" class="inbox-list"></div></section>';
+    document.body.appendChild(modal);
+    function close() { modal.classList.add('hidden'); document.body.classList.remove('drawer-open'); }
+    document.getElementById('closeTasks').onclick = close;
+    modal.onclick = function (event) { if (event.target === modal) close(); };
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !modal.classList.contains('hidden')) close(); });
+  }
+
+  async function refreshTasks() {
+    if (tasksLoading) return tasksLoading;
+    tasksLoading = (async function () {
+      try { await window.PATCHWORK_READY; if (!window.PATCHWORK_PROFILE || !window.PatchworkAPI) throw new Error('请先登录后查看任务'); taskItems = collectTasks(await window.PatchworkAPI.listBugs(), window.PATCHWORK_PROFILE); renderTasks(); }
+      catch (error) { var list = document.getElementById('tasksList'); if (list) list.innerHTML = '<div class="inbox-empty">任务加载失败：' + inboxEscape(error.message) + '<button type="button" id="retryTasks" class="case-action-button">重试</button></div>'; var retry = document.getElementById('retryTasks'); if (retry) retry.onclick = refreshTasks; }
+      finally { tasksLoading = null; }
+    })();
+    return tasksLoading;
+  }
+
+  function openTasks() {
+    closeInbox(); ensureTasksModal();
+    document.getElementById('tasksModal').classList.remove('hidden'); document.body.classList.add('drawer-open');
+    document.getElementById('tasksList').innerHTML = '<div class="inbox-empty">正在加载任务…</div>';
+    return refreshTasks();
+  }
+
+  window.addEventListener('patchwork:reports-changed', refreshTasks);
+  window.addEventListener('patchwork:page-ready', scheduleInboxLoad);
+  window.addEventListener('focus', function () { var modal = document.getElementById('tasksModal'); if (modal && !modal.classList.contains('hidden')) refreshTasks(); });
+  window.addEventListener('pageshow', function (event) { if (event.persisted && window.PatchworkAPI) refreshTasks(); });
+  document.addEventListener('visibilitychange', function () { var modal = document.getElementById('tasksModal'); if (!document.hidden && modal && !modal.classList.contains('hidden')) refreshTasks(); });
+  window.setInterval(function () { var modal = document.getElementById('tasksModal'); if (!document.hidden && modal && !modal.classList.contains('hidden')) refreshTasks(); }, 30000);
 
   function inboxEscape(value) {
     return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -124,6 +187,8 @@
   }
 
   async function openInbox() {
+    var tasks = document.getElementById('tasksModal');
+    if (tasks) tasks.classList.add('hidden');
     ensureInboxModal();
     var modal = document.getElementById('inboxModal');
     modal.classList.remove('hidden');
@@ -158,6 +223,7 @@
     try {
       var result = await Promise.all([window.PatchworkAPI.listBugs(), window.PatchworkAPI.listProfiles()]);
       var bugs = result[0] || [];
+      taskItems = collectTasks(bugs, profile); renderTasks();
       var profiles = result[1] || [];
       var profileMap = {};
       profiles.forEach(function (person) { profileMap[person.id] = person; });
@@ -249,6 +315,12 @@
     topbar.querySelector('.nav-data-board').classList.toggle('active', page === 'data-dashboard.html');
     document.getElementById('topUserCard').addEventListener('click', openProfileModal);
     document.getElementById('inboxButton').addEventListener('click', openInbox);
+    var taskButton = document.createElement('button');
+    taskButton.id = 'tasksButton'; taskButton.type = 'button'; taskButton.className = 'inbox-button';
+    taskButton.innerHTML = '任务<span id="tasksBadge" class="inbox-badge hidden">0</span>';
+    document.getElementById('inboxButton').before(taskButton);
+    taskButton.onclick = openTasks;
+    var taskStyles = document.createElement('link'); taskStyles.rel = 'stylesheet'; taskStyles.href = 'css/tasks.css?v=1.7.0'; document.head.appendChild(taskStyles);
     loadDailyQuote();
   }
 
@@ -308,7 +380,7 @@
   async function confirmLogout() { closeLogoutConfirm(); closeAccountSettings(); closeProfileModal(); if (window.PATCHWORK_AUTH) await window.PATCHWORK_AUTH.signOut(); }
   async function saveProfile(event) { event.preventDefault(); var form = event.currentTarget, button = form.querySelector('button[type="submit"]'), error = document.getElementById('profileError'); button.disabled = true; button.textContent = '保存中…'; error.classList.add('hidden'); try { var schedule = window.PATCHWORK_PROFILE.contact_schedule || {}; var patch = { p_qq: form.qq.value.trim(), p_wechat: form.wechat.value.trim(), p_phone: form.phone.value.trim(), p_contact_time: form.contact_time.value.trim(), p_contact_schedule: schedule }; var result = await window.PATCHWORK_SUPABASE.rpc('update_my_contact_profile', patch); if (result.error) throw result.error; window.PATCHWORK_PROFILE = Object.assign({}, window.PATCHWORK_PROFILE, { qq: patch.p_qq, wechat: patch.p_wechat, phone: patch.p_phone, contact_time: patch.p_contact_time, contact_schedule: schedule }); localStorage.setItem('xiaoyuanbao-profile-cache', JSON.stringify(window.PATCHWORK_PROFILE)); closeProfileModal(); } catch (e) { error.textContent = e.message || '个人信息保存失败。'; error.classList.remove('hidden'); } finally { button.disabled = false; button.textContent = '保存信息'; } }
 
-  function syncProfile() {
+  function syncProfile(verified) {
     var profile = window.PATCHWORK_PROFILE;
     var avatar = document.getElementById('topUserAvatar');
     var name = document.getElementById('topUserName');
@@ -330,7 +402,8 @@
     var workspace = new URLSearchParams(window.location.search).get('workspace');
     if (homeLink && isProductLead) homeLink.href = 'index.html?workspace=test';
     if (productDepartmentLink) productDepartmentLink.href = isProductLead ? 'index.html?workspace=product' : 'department-bugs.html?department=产品';
-    if (profile && profile.role !== 'admin') {
+    // Cached identity can be shown immediately, but only verified permissions may redirect.
+    if (verified && profile && profile.role !== 'admin') {
       var currentDepartment = new URLSearchParams(window.location.search).get('department');
       var productLead = isProductLead;
       var allowedHome = profile.department === '测试' ? !currentDepartment : currentDepartment === profile.department;
@@ -366,8 +439,8 @@
   syncProfile();
   if (window.PATCHWORK_READY) {
     window.PATCHWORK_READY.then(function () {
-      syncProfile();
+      syncProfile(true);
       scheduleInboxLoad();
-    });
+    }).catch(function (error) { console.error('导航登录验证失败', error); });
   }
 })();

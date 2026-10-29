@@ -1,0 +1,5 @@
+.task-item { align-items: center; }
+.task-item input[type="checkbox"] { width: 19px; height: 19px; flex: 0 0 auto; accent-color: #39896a; opacity: 1; }
+.task-done { background: #f5f8f5; }
+.task-done h3 { color: #728078; text-decoration: line-through; }
+.task-item .inbox-item-head > span { color: #68716c; font-size: 11px; }

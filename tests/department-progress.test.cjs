@@ -39,6 +39,15 @@ test('处理更新仅发送当前部门补丁到原子 RPC，而不是全量覆�
   assert.equal(calls[0].options.headers.apikey, 'public-key');
 });
 
+test('成功保存处理状态后通知公共任务清单刷新', async () => {
+  const { api, window } = apiContext();
+  const events=[];
+  window.Event=function(type){this.type=type;};
+  window.dispatchEvent=event=>events.push(event.type);
+  await api.updateDepartmentProgress('one','技术—后端',{status:'resolved'});
+  assert.deepEqual(events,['patchwork:reports-changed']);
+});
+
 test('圆环按报告汇总，部分完成算处理中，总表显示四部门与未分配', async () => {
   const { api } = apiContext();
   const nodes = {};
